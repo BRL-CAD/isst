@@ -1901,8 +1901,8 @@ static GtkActionEntry entries[] = {
 	{ "Component View",		NULL,			"Component View",	NULL,		"Component View",	menuitem_view_component_callback },
 	{ "Cut View",			NULL,			"Cut View",		NULL,		"Cut View",		menuitem_view_cut_callback },
 	{ "Shotline",			NULL,			"Shotline",		NULL,		"Shotline",		menuitem_shotline_callback },
-	{ "Frag Line of Sight",	NULL,			"Frag Line of Sight",	NULL,		"Frag Line of Sight",	menuitem_flos_callback },
-	{ "Behind Armor Debris",	NULL,			"Behind Armor Debris",	NULL,		"Behind Armor Debris",	menuitem_exit_callback },
+	{ "FLOS",	NULL,			"FLOS",	NULL,		"FLOS",	menuitem_flos_callback },
+	{ "BAD",	NULL,			"BAD",	NULL,		"BAD",	menuitem_exit_callback },
 	{ "ViewMenu",			NULL,			"_View" },
 	{ "Front",			NULL,			"Front",		NULL,		"Front",		menuitem_view_front_callback },
 	{ "Back",			NULL,			"Back",			NULL,		"Back",			menuitem_view_back_callback },
@@ -1933,8 +1933,8 @@ static const char *ui_description =
 "			<menuitem action='Component View'/>"
 "			<menuitem action='Cut View'/>"
 "			<menuitem action='Shotline'/>"
-"			<menuitem action='Frag Line of Sight'/>"
-"			<menuitem action='Behind Armor Debris'/>"
+"			<menuitem action='FLOS'/>"
+"			<menuitem action='BAD'/>"
 "		</menu>"
 "		<menu action='ViewMenu'>"
 "			<menuitem action='Front'/>"
