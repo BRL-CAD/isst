@@ -33,9 +33,9 @@
 
 #include <mysql.h>
 
-#include "tie/tienet.h"
+#include "tie/tie.h"
+#include "tie/adrt.h"
 #include "isst.h"
-
 
 #ifdef HAVE_GETOPT_H
 # include <getopt.h>

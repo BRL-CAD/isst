@@ -31,7 +31,6 @@
 #include <mysql.h>
 
 #include "tie/tie.h"
-#include "tie/tienet.h"
 #include "tie/adrt.h"
 
 #include "isst.h"

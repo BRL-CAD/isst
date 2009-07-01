@@ -46,8 +46,8 @@
 	#include <zlib.h>
 #endif
 
+#include "tie/tie.h"
 #include "tie/camera.h"
-#include "tie/tienet.h"
 
 #include "tie/adrt.h"
 #include "tie/adrt_struct.h"
