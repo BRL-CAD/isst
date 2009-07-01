@@ -1,0 +1,13 @@
+(from an email)
+
+Here is the source to adrt/isst.  You'll need to separately compile adrt
+and isst in their respective directories doing the standard "autoreconf
+-vis && ./configure && make clean && make".  adrt_master and adrt_slave
+are used to establish compute nodes and isst is the client that attaches
+to the master.  There is a MySQL database that must exist (described in
+the README) that contains BRL-CAD Geometry.  There is a utility within
+the ISST folder that is used for transforming a BRL-CAD geometry file
+containing BOTS (along with a region map file) into an entry in the
+MySQL database such that ISST can generate a list of available targets.
+Check the MySQL database for isst running on either orthus or shiva for
+a working example.  Hope this helps,

@@ -1,0 +1,77 @@
+## REMEMBER TO SET MAX QUERY SIZE TO 1GB OR LARGER!
+create database adrt;
+use adrt;
+
+# user accounts
+create table user(
+  uid int unsigned primary key auto_increment,
+  username char(32),
+  password char(41)
+);
+
+# a project has a geometry profile and set of analysis runs attached to it
+create table project(
+  pid int unsigned primary key auto_increment,
+  permissions tinyint unsigned,
+  uid int unsigned,
+  name char(32),
+  gid int unsigned
+);
+
+# triangle geometry and acceleration structure in binary form
+create table geometry(
+  gid int unsigned primary key auto_increment,
+  name char(32),
+  trinum int unsigned,
+  meshnum int unsigned,
+  gsize int unsigned,
+  gdata longblob,
+  asize int unsigned,
+  adata longblob
+);
+
+# attributes linked to a triangle mesh
+create table attribute(
+  aid int unsigned primary key auto_increment,
+  gid int unsigned,
+  name char(32),
+  type char(32),
+  data char(48),
+  INDEX index_gid_name_type (gid,name,type)
+);
+
+# mesh map, links a mesh name to an attribute name
+create table meshattrmap(
+  mid int unsigned primary key auto_increment,
+  gid int unsigned,
+  mesh char(255),
+  attr char(32),
+  INDEX index_mesh_gid (mesh,gid)
+);
+
+# analysis that specifies a specific type containing a seed to generate results
+create table analysis(
+  aid int unsigned primary key auto_increment,
+  pid int unsigned,
+  type char(32),
+  name char(32)
+);
+
+# analysis groups for collection information from a group of like analyses
+create table analysis_group(
+  aid_group int unsigned,
+  aid_child int unsigned
+);
+
+# shotline analysis seed
+create table shotline(
+  aid int unsigned,
+  grid float,
+  posx float,
+  posy float,
+  posz float,
+  azim float,
+  elev float,
+  cellx float unsigned,
+  celly float unsigned
+);
