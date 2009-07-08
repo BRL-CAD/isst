@@ -640,10 +640,12 @@ menuitem_connect_callback ()
 	wlist[10] = gtk_entry_new ();
 	gtk_table_attach_defaults (GTK_TABLE (wlist[1]), wlist[10], 1, 2, 4, 5);
 
-#ifdef HAX
-	gtk_entry_set_text(GTK_ENTRY(wlist[8]), "");
-	gtk_entry_set_text(GTK_ENTRY(wlist[10]), "");
-#endif
+	if(getenv("ADRT_DB"))
+	    gtk_entry_set_text(GTK_ENTRY(wlist[8]), getenv("ADRT_DB"));
+	else if(getenv("ADRT_DATABASE"))
+	    gtk_entry_set_text(GTK_ENTRY(wlist[8]), getenv("ADRT_DATABASE"));
+	if(getenv("ADRT_MASTER"))
+	    gtk_entry_set_text(GTK_ENTRY(wlist[10]), getenv("ADRT_MASTER"));
 
 	/* Connect Button */
 	wlist[11] = gtk_button_new_with_label ("Connect");
