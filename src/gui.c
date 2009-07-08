@@ -122,11 +122,11 @@ isst_project_widgets ()
 	GtkWidget *widget;
 	uint8_t mode = isst.connected ? TRUE : FALSE;
 
-#define SWIDG(s,m) widget = gtk_ui_manager_get_widget (isst_ui_manager, s); gtk_widget_set_sensitive (widget, m);
+#define SWIDG(s,m) gtk_widget_set_sensitive (gtk_ui_manager_get_widget (isst_ui_manager, s), m);
 	/* Widgets to display when connected */
 	SWIDG("/MainMenu/ISSTMenu/Connect", !mode);
 	SWIDG("/MainMenu/ISSTMenu/Disconnect",mode);
-	SWIDG("/MainMenu/ISSTMenu/Load Project",mode);
+	SWIDG("/MainMenu/ISSTMenu/Load MySQL Project",mode);
 	SWIDG("/MainMenu/ISSTMenu/Load Data",mode);
 	SWIDG("/MainMenu/ModeMenu",mode);
 	SWIDG("/MainMenu/ViewMenu",mode);
@@ -986,8 +986,89 @@ VIEW_CALLBACK(shotline, SHOTLINE,
 	isst.mouse_x = (int16_t) gtk_spin_button_get_value (GTK_SPIN_BUTTON (isst_cellx_spin));
 	isst.mouse_y = (int16_t) gtk_spin_button_get_value (GTK_SPIN_BUTTON (isst_celly_spin)));
 
+static void load_frame_attribute()
+{
+	/* frame attributes (size and format) */
+	uint32_t size;
+	uint16_t w, h, format;
+	uint8_t ind, message[256], op;
+
+	ind = 0;
+
+	w = ISST_CONTEXT_W;
+	h = ISST_CONTEXT_H;
+	format = RENDER_CAMERA_BIT_DEPTH_24;
+
+	op = ADRT_NETOP_WORK;
+	TCOPY(uint8_t, &op, 0, message, ind);
+	ind++;
+
+	size = 9; /* wid + op + w + h + format */
+	TCOPY(uint32_t, &size, 0, message, ind);
+	ind += 4;
+
+	op = ADRT_WORK_FRAME_ATTR;
+	TCOPY(uint8_t, &op, 0, message, ind);
+	ind++;
+
+	TCOPY(uint16_t, &isst.wid, 0, message, ind);
+	ind += 2;
+
+	TCOPY(uint16_t, &w, 0, message, ind);
+	ind += 2;
+	TCOPY(uint16_t, &h, 0, message, ind);
+	ind += 2;
+	TCOPY(uint16_t, &format, 0, message, ind);
+	ind += 2;
+
+	tienet_send (isst.socket, message, ind);
+
+	/* Request geometry min and max */
+	op = ADRT_NETOP_WORK;
+	tienet_send (isst.socket, &op, 1);
+
+	/* size */
+	size = 3;
+	tienet_send (isst.socket, &size, 4);
+
+	op = ADRT_WORK_MINMAX;
+	tienet_send (isst.socket, &op, 1);
+
+	/* workspace id */
+	tienet_send (isst.socket, &isst.wid, 2);
+}
+
 static void
-load_project_callback (GtkWidget *widget, gpointer ptr)
+load_g_project_callback (GtkWidget *widget, gpointer ptr)
+{
+	uint8_t op;
+	char buf[BUFSIZ];
+	int size, i;
+
+	/*
+	op = ADRT_NETOP_REQWID;
+	tienet_send (isst.socket, &op, 1);
+	tienet_recv (isst.socket, &isst.wid, 2);
+	*/
+
+	op = ADRT_NETOP_LOAD;
+	tienet_send (isst.socket, &op, 1);
+
+	size = sizeof(op) + sizeof(isst.wid) + 1 + strlen("/tmp/moss.g:all.g");
+
+	/* send size */
+	tienet_send (isst.socket, &size, 4);
+
+	snprintf(buf, BUFSIZ, "%c  %c/tmp/moss.g:all.g", ADRT_WORK_INIT, ADRT_LOAD_FORMAT_G);
+	*(uint16_t *)(buf+1) = isst.wid;
+
+	tienet_send (isst.socket, buf, size);
+	load_frame_attribute();
+	isst.work_frame ();
+}
+
+static void
+load_mysql_project_callback (GtkWidget *widget, gpointer ptr)
 {
 	GtkWidget **wlist;
 	GtkWidget *window;
@@ -1029,7 +1110,6 @@ load_project_callback (GtkWidget *widget, gpointer ptr)
 	tienet_send (isst.socket, &op, 1);
 	tienet_recv (isst.socket, &isst.wid, 2);
 
-
 	op = ADRT_NETOP_LOAD;
 	tienet_send (isst.socket, &op, 1);
 
@@ -1039,90 +1119,27 @@ load_project_callback (GtkWidget *widget, gpointer ptr)
 	/* send size */
 	tienet_send (isst.socket, &size, 4);
 
-	{
-#if 0
-		struct adrt_load_info li;
-		li.op = ADRT_WORK_INIT;
-		li.wid = htonl(isst.wid);
-		li.fmt = htonl(fmt);
-		li.pid = htonl(isst.pid);
-		strncpy(li.dbnam, bu_vls_addr(&isst.database), 64 /* evil magic number, DB will be removed eventually */);
-		tienet_send(isst.socket, &li, sizeof(li));
-#else
-		op = ADRT_WORK_INIT;
-		tienet_send (isst.socket, &op, 1);
-
-		/* send workspace id */
-		tienet_send (isst.socket, &isst.wid, 2);
-
-		/* end of libtienet handled data */
-		/* start of slave handled data */
-
-		fmt = ADRT_LOAD_FORMAT_MYSQL_F;	/* magic for mysql */
-		tienet_send (isst.socket, &fmt, sizeof(fmt));
-
-		/* send project id */
-		tienet_send (isst.socket, &isst.pid, sizeof(isst.pid));
-
-		/* send database hostname */
-		l = bu_vls_strlen (&isst.database) + 1;
-		tienet_send (isst.socket, &l, sizeof(l));
-		tienet_send (isst.socket, bu_vls_addr(&isst.database), l);
-
-#endif
-	}
-
-	/* frame attributes (size and format) */
-	{
-		uint32_t size;
-		uint16_t w, h, format;
-		uint8_t ind, message[256];
-
-		ind = 0;
-
-		w = ISST_CONTEXT_W;
-		h = ISST_CONTEXT_H;
-		format = RENDER_CAMERA_BIT_DEPTH_24;
-
-		op = ADRT_NETOP_WORK;
-		TCOPY(uint8_t, &op, 0, message, ind);
-		ind++;
-
-		size = 9; /* wid + op + w + h + format */
-		TCOPY(uint32_t, &size, 0, message, ind);
-		ind += 4;
-
-		op = ADRT_WORK_FRAME_ATTR;
-		TCOPY(uint8_t, &op, 0, message, ind);
-		ind++;
-
-		TCOPY(uint16_t, &isst.wid, 0, message, ind);
-		ind += 2;
-
-		TCOPY(uint16_t, &w, 0, message, ind);
-		ind += 2;
-		TCOPY(uint16_t, &h, 0, message, ind);
-		ind += 2;
-		TCOPY(uint16_t, &format, 0, message, ind);
-		ind += 2;
-
-		tienet_send (isst.socket, message, ind);
-	}
-
-	/* Request geometry min and max */
-	op = ADRT_NETOP_WORK;
+	op = ADRT_WORK_INIT;
 	tienet_send (isst.socket, &op, 1);
 
-	/* size */
-	size = 3;
-	tienet_send (isst.socket, &size, 4);
-
-	op = ADRT_WORK_MINMAX;
-	tienet_send (isst.socket, &op, 1);
-
-	/* workspace id */
+	/* send workspace id */
 	tienet_send (isst.socket, &isst.wid, 2);
 
+	/* end of libtienet handled data */
+	/* start of slave handled data */
+
+	fmt = ADRT_LOAD_FORMAT_MYSQL_F;	/* magic for mysql */
+	tienet_send (isst.socket, &fmt, sizeof(fmt));
+
+	/* send project id */
+	tienet_send (isst.socket, &isst.pid, sizeof(isst.pid));
+
+	/* send database hostname */
+	l = bu_vls_strlen (&isst.database) + 1;
+	tienet_send (isst.socket, &l, sizeof(l));
+	tienet_send (isst.socket, bu_vls_addr(&isst.database), l);
+
+	load_frame_attribute();
 
 	/* Destroy the window along with all of its widgets */
 	gtk_widget_destroy (window);
@@ -1133,9 +1150,15 @@ load_project_callback (GtkWidget *widget, gpointer ptr)
 	free (wlist);
 }
 
+static void
+menuitem_load_g_callback ()
+{
+    /* make a dialog box */
+    load_g_project_callback(NULL, 0);
+}
 
 static void
-menuitem_load_project_callback ()
+menuitem_load_mysql_project_callback ()
 {
 	GtkCellRenderer *renderer;
 	GtkTreeViewColumn *column;
@@ -1173,8 +1196,6 @@ menuitem_load_project_callback ()
 	store = gtk_list_store_new (3, G_TYPE_UINT, G_TYPE_STRING, G_TYPE_UINT);
 
 	/* query for projects */
-
-	
 	proj = sql_projects(isst.uid);
 	while(proj) {
 		struct proj_s *next = proj->next;
@@ -1213,7 +1234,7 @@ menuitem_load_project_callback ()
 	wlist[0] = window;
 	wlist[1] = treeview;
 
-	g_signal_connect (G_OBJECT (button), "clicked", G_CALLBACK (load_project_callback), wlist);
+	g_signal_connect (G_OBJECT (button), "clicked", G_CALLBACK (load_mysql_project_callback), wlist);
 	gtk_box_pack_end (GTK_BOX (vbox), button, FALSE, FALSE, 0);
 
 	gtk_widget_show_all (window);
@@ -1890,30 +1911,31 @@ context_motion_event (GtkWidget *widget, GdkEventMotion *event)
 
 
 static GtkActionEntry entries[] = {
-	{ "ISSTMenu",			NULL,			"_ISST" },
-	{ "Connect",			GTK_STOCK_CONNECT,	"_Connect",		"<control>C",	"Connect",		menuitem_connect_callback },
+	{ "ISSTMenu",		NULL,			"_ISST" },
+	{ "Connect",		GTK_STOCK_CONNECT,	"_Connect",		"<control>C",	"Connect",		menuitem_connect_callback },
 	{ "Disconnect",		GTK_STOCK_DISCONNECT,	"_Discconect",		"<control>D",	"Disconnect",		menuitem_disconnect_callback },
-	{ "Load Project",		GTK_STOCK_OPEN,		"_Load Project",	"<control>L",	"Load Project",		menuitem_load_project_callback },
+	{ "Load MySQL Project",	GTK_STOCK_OPEN,		"_Load MySQL Project",	"<control>L",	"Load MySQL Project",	menuitem_load_mysql_project_callback },
+	{ "Load G",		GTK_STOCK_OPEN,		"Load _G",		"<control>G",	"Load G",		menuitem_load_g_callback },
 	{ "Load Data",		GTK_STOCK_OPEN,		"Load _Data",		"<control>A",	"Load Data",		menuitem_load_analysis_callback },
-	{ "Quit",			GTK_STOCK_QUIT,		"_Quit",		"<control>Q",	"Quit",			menuitem_exit_callback },
-	{ "ModeMenu",			NULL,			"_Mode" },
-	{ "Shaded View",		NULL,			"Shaded View",		NULL,		"Shaded View",		menuitem_view_shaded_callback },
-	{ "Normal View",		NULL,			"Normal View",		NULL,		"Normal View",		menuitem_view_normal_callback },
-	{ "Depth View",			NULL,			"Depth View",		NULL,		"Depth View",		menuitem_view_depth_callback },
-	{ "Component View",		NULL,			"Component View",	NULL,		"Component View",	menuitem_view_component_callback },
-	{ "Cut View",			NULL,			"Cut View",		NULL,		"Cut View",		menuitem_view_cut_callback },
-	{ "Shotline",			NULL,			"Shotline",		NULL,		"Shotline",		menuitem_shotline_callback },
-	{ "FLOS",	NULL,			"FLOS",	NULL,		"FLOS",	menuitem_flos_callback },
-	{ "BAD",	NULL,			"BAD",	NULL,		"BAD",	menuitem_exit_callback },
-	{ "ViewMenu",			NULL,			"_View" },
-	{ "Front",			NULL,			"Front",		NULL,		"Front",		menuitem_view_front_callback },
-	{ "Back",			NULL,			"Back",			NULL,		"Back",			menuitem_view_back_callback },
-	{ "Left",			NULL,			"Left",			NULL,		"Left",			menuitem_view_left_callback },
-	{ "Right",			NULL,			"Right",		NULL,		"Right",		menuitem_view_right_callback },
+	{ "Quit",		GTK_STOCK_QUIT,		"_Quit",		"<control>Q",	"Quit",			menuitem_exit_callback },
+	{ "ModeMenu",		NULL,			"_Mode" },
+	{ "Shaded View",	NULL,			"Shaded View",		NULL,		"Shaded View",		menuitem_view_shaded_callback },
+	{ "Normal View",	NULL,			"Normal View",		NULL,		"Normal View",		menuitem_view_normal_callback },
+	{ "Depth View",		NULL,			"Depth View",		NULL,		"Depth View",		menuitem_view_depth_callback },
+	{ "Component View",	NULL,			"Component View",	NULL,		"Component View",	menuitem_view_component_callback },
+	{ "Cut View",		NULL,			"Cut View",		NULL,		"Cut View",		menuitem_view_cut_callback },
+	{ "Shotline",		NULL,			"Shotline",		NULL,		"Shotline",		menuitem_shotline_callback },
+	{ "FLOS",		NULL,			"FLOS",			NULL,		"FLOS",			menuitem_flos_callback },
+	{ "BAD",		NULL,			"BAD",			NULL,		"BAD",			menuitem_exit_callback },
+	{ "ViewMenu",		NULL,			"_View" },
+	{ "Front",		NULL,			"Front",		NULL,		"Front",		menuitem_view_front_callback },
+	{ "Back",		NULL,			"Back",			NULL,		"Back",			menuitem_view_back_callback },
+	{ "Left",		NULL,			"Left",			NULL,		"Left",			menuitem_view_left_callback },
+	{ "Right",		NULL,			"Right",		NULL,		"Right",		menuitem_view_right_callback },
 	{ "Hit Point",		NULL,			"Hit Point",		NULL,		"Hit Point",		menuitem_view_hit_point_callback },
-	{ "MiscMenu",			NULL,			"_Misc" },
-	{ "Screen Capture",		NULL,			"Screen Capture",	NULL,		"Screen Capture",	menuitem_misc_screenshot_callback },
-	{ "HelpMenu",			NULL,			"_Help" },
+	{ "MiscMenu",		NULL,			"_Misc" },
+	{ "Screen Capture",	NULL,			"Screen Capture",	NULL,		"Screen Capture",	menuitem_misc_screenshot_callback },
+	{ "HelpMenu",		NULL,			"_Help" },
 	{ "About ISST",		GTK_STOCK_ABOUT,	"_About ISST",		"<control>A",	"About ISST",		menuitem_about_callback },
 };
 
@@ -1924,7 +1946,8 @@ static const char *ui_description =
 "		<menu action='ISSTMenu'>"
 "			<menuitem action='Connect'/>"
 "			<menuitem action='Disconnect'/>"
-"			<menuitem action='Load Project'/>"
+"			<menuitem action='Load MySQL Project'/>"
+"			<menuitem action='Load G'/>"
 "			<menuitem action='Load Data'/>"
 "			<menuitem action='Quit'/>"
 "		</menu>"
