@@ -63,8 +63,8 @@ typedef struct isst_s
   /* general */
   char username[32];
   char password[32];
-  char database[64];
-  char master[64];
+  struct bu_vls database;
+  struct bu_vls master;
   int32_t uid;
   int32_t pid;
   uint16_t wid;

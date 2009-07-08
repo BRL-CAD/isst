@@ -30,6 +30,8 @@
 
 #include <mysql.h>
 
+#include <bu.h>
+
 #include "tie/tie.h"
 #include "tie/adrt.h"
 
@@ -46,7 +48,7 @@ static int sql_connected = 0;
 int
 sql_connect(char *host)
 {
-	sql_connected = mysql_real_connect(&isst.mysql_db, isst.database, ISST_MYSQL_USER, ISST_MYSQL_PASS, ISST_MYSQL_DB, 0, 0, 0)?1:0;
+	sql_connected = mysql_real_connect(&isst.mysql_db, bu_vls_addr(&isst.database), ISST_MYSQL_USER, ISST_MYSQL_PASS, ISST_MYSQL_DB, 0, 0, 0)?1:0;
 	return sql_connected;
 }
 

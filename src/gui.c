@@ -313,6 +313,7 @@ isst_net_worker (gpointer moocow)
 	unsigned int addrlen;
 	uint8_t op;
 
+
 	/* create a socket */
 	if ((isst.socket = socket (AF_INET, SOCK_STREAM, 0)) < 0) {
 		generic_dialog ("Unable to create network socket for master.");
@@ -325,10 +326,8 @@ isst_net_worker (gpointer moocow)
 	my_addr.sin_addr.s_addr = INADDR_ANY;
 	my_addr.sin_port = htons (0);
 
-	if (gethostbyname (isst.master))
-	{
-		srv_hostent = gethostbyname (isst.master)[0];
-	}
+	if (gethostbyname (bu_vls_addr(&isst.master)))
+		srv_hostent = gethostbyname (bu_vls_addr(&isst.master))[0];
 	else
 	{
 		generic_dialog ("Hostname for master doesn't resolve.");
@@ -366,13 +365,13 @@ isst_net_worker (gpointer moocow)
 	tienet_send (isst.socket, &op, 1);
 
 	/* Get back an endian value from the master to determine endian data will need to be in. */
-	tienet_recv (isst.socket, &isst.endian, sizeof (short));
+	tienet_recv (isst.socket, &isst.wid, sizeof (isst.wid));
 	isst.endian = isst.endian == 1 ? 0 : 1;
 
 
 	while (1)
 	{
-		uint16_t wid;
+		static short int wid = 0;
 
 		/* get op */
 		tienet_recv (isst.socket, &op, 1);
@@ -395,9 +394,7 @@ isst_net_worker (gpointer moocow)
 			isst.update_avail = 0;
 		}
 		else 
-		{
-				isst.update_idle = 1;
-		}
+			isst.update_idle = 1;
 		pthread_mutex_unlock (&isst.update_mut);
 
 		tienet_recv (isst.socket, &buffer->ind, 4);
@@ -543,10 +540,13 @@ validate_user_callback (GtkWidget *widget, gpointer ptr)
 
 	strcpy(isst.username, GTK_ENTRY (username)->text);
 	strcpy(isst.password, GTK_ENTRY (password)->text);
-	strcpy(isst.database, GTK_ENTRY (database)->text);
-	strcpy(isst.master, GTK_ENTRY (master)->text);
+	bu_vls_strcpy(&isst.database, GTK_ENTRY (database)->text);
+	bu_vls_strcpy(&isst.master, GTK_ENTRY (master)->text);
 
-	if(sql_connect( GTK_ENTRY(database)->text ) == 0) {
+	bu_vls_trimspace(&isst.database);
+	bu_vls_trimspace(&isst.master);
+
+	if(sql_connect( bu_vls_addr(&isst.database) ) == 0) {
 		gtk_label_set_text(GTK_LABEL (status), "Status: MySQL Connection Failed");
 		return;
 	}
@@ -562,7 +562,7 @@ validate_user_callback (GtkWidget *widget, gpointer ptr)
 		GError *error = NULL;
 
 		/* Initiate networking */
-		if(strlen(isst.master) == 0 || strncmp(isst.master, "local", 5) == 0) {
+		if(strlen(bu_vls_addr(&isst.master)) == 0 || strcmp(bu_vls_addr(&isst.master), "local") == 0) {
 			isst.worker = isst_local_worker;
 			isst.work_frame = isst_local_work_frame;
 		} else {
@@ -1032,7 +1032,7 @@ load_project_callback (GtkWidget *widget, gpointer ptr)
 	tienet_send (isst.socket, &op, 1);
 
 	/* op + wid + strlen + string + pid + length_of_host */
-	size = sizeof(op) + sizeof(isst.wid) + sizeof(fmt) + strlen (isst.database) + sizeof(l) + sizeof(isst.pid) + 1;
+	size = sizeof(op) + sizeof(isst.wid) + sizeof(fmt) + bu_vls_strlen (&isst.database) + sizeof(l) + sizeof(isst.pid) + 1;
 
 	/* send size */
 	tienet_send (isst.socket, &size, 4);
@@ -1044,7 +1044,7 @@ load_project_callback (GtkWidget *widget, gpointer ptr)
 		li.wid = htonl(isst.wid);
 		li.fmt = htonl(fmt);
 		li.pid = htonl(isst.pid);
-		strncpy(li.dbnam, isst.database, 64 /* evil magic number, DB will be removed eventually */);
+		strncpy(li.dbnam, bu_vls_addr(&isst.database), 64 /* evil magic number, DB will be removed eventually */);
 		tienet_send(isst.socket, &li, sizeof(li));
 #else
 		op = ADRT_WORK_INIT;
@@ -1063,9 +1063,9 @@ load_project_callback (GtkWidget *widget, gpointer ptr)
 		tienet_send (isst.socket, &isst.pid, sizeof(isst.pid));
 
 		/* send database hostname */
-		l = strlen (isst.database) + 1;
+		l = bu_vls_strlen (&isst.database) + 1;
 		tienet_send (isst.socket, &l, sizeof(l));
-		tienet_send (isst.socket, isst.database, l);
+		tienet_send (isst.socket, bu_vls_addr(&isst.database), l);
 
 #endif
 	}
@@ -2426,8 +2426,8 @@ isst_setup ()
 	/* Authentication Info */
 	strcpy (isst.username, "");
 	strcpy (isst.password, "");
-	strcpy (isst.database, "");
-	strcpy (isst.master, "");
+	bu_vls_init (&isst.database);
+	bu_vls_init (&isst.master);
 	isst.connected = 0;
 
 	/* Camera Info */
