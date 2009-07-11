@@ -116,13 +116,9 @@ AM_CONDITIONAL(HAVE_ADRT, [test "x$with_adrtpfx" != "xno"])
 
 TIE_CFLAGS="-I/usr/brlcad/include -I/usr/brlcad/include/brlcad -DTIE_PRECISION=0 -DHAX=1"
 TIE_LIBS="-L/usr/brlcad/lib -ltie"
-TIENET_LIBS="-L/usr/brlcad/lib -ltienet"
-TEXTURE_LIBS="-L/usr/brlcad/lib -ltexture"
 RENDER_LIBS="-L/usr/brlcad/lib -lrender"
 AC_SUBST(TIE_CFLAGS)
 AC_SUBST(TIE_LIBS)
-AC_SUBST(TIENET_LIBS)
-AC_SUBST(TEXTURE_LIBS)
 AC_SUBST(RENDER_LIBS)
 
 AC_CONFIG_FILES([Makefile src/Makefile utils/Makefile])

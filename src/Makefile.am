@@ -14,7 +14,6 @@ AM_CFLAGS = \
 
 AM_LDFLAGS = \
 	@TIE_LIBS@ \
-	@TIENET_LIBS@ \
 	@RENDER_LIBS@ \
 	@GTK_LIBS@ \
 	@GLIB_LIBS@ \
