@@ -95,6 +95,15 @@ int main(int argc, char **argv) {
   argc -= optind;
   argv += optind;
 
+  bu_vls_init(&isst.database);
+  bu_vls_init(&isst.master);
+  if(getenv("ADRT_DB"))
+         bu_vls_strcpy(&isst.database, getenv("ADRT_DB"));
+  else if(getenv("ADRT_DATABASE"))
+         bu_vls_strcpy(&isst.database, getenv("ADRT_DATABASE"));
+  if(getenv("ADRT_MASTER"))
+         bu_vls_strcpy(&isst.database, getenv("ADRT_MASTER"));
+
   isst_init ();
 
   return EXIT_SUCCESS;
