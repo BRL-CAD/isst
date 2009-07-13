@@ -520,6 +520,26 @@ destroy (GtkWidget *widget, gpointer data)
 
 }
 
+static int
+attach_master(struct bu_vls *hostname)
+{
+    GError *error = NULL;
+
+    /* Initiate networking */
+    if(strlen(bu_vls_addr(&isst.master)) == 0 || strcmp(bu_vls_addr(&isst.master), "local") == 0) {
+	isst.worker = isst_local_worker;
+	isst.work_frame = isst_local_work_frame;
+    } else {
+	isst.work_frame = isst_net_work_frame;
+	isst.worker = isst_net_worker;
+    }
+    g_thread_create (isst.worker, 0, FALSE, &error);
+
+    isst.connected = 1;
+    isst_project_widgets ();
+
+    return 0;
+}
 
 static void
 validate_user_callback (GtkWidget *widget, gpointer ptr)
@@ -559,20 +579,7 @@ validate_user_callback (GtkWidget *widget, gpointer ptr)
 #endif
 
 	if(isst.uid > 0) {
-		GError *error = NULL;
-
-		/* Initiate networking */
-		if(strlen(bu_vls_addr(&isst.master)) == 0 || strcmp(bu_vls_addr(&isst.master), "local") == 0) {
-			isst.worker = isst_local_worker;
-			isst.work_frame = isst_local_work_frame;
-		} else {
-			isst.work_frame = isst_net_work_frame;
-			isst.worker = isst_net_worker;
-		}
-		g_thread_create (isst.worker, 0, FALSE, &error);
-
-		isst.connected = 1;
-		isst_project_widgets ();
+		attach_master(&isst.master);
 
 		/* Destroy the window along with all of its widgets */
 		gtk_widget_destroy (wlist[0]);
@@ -2451,8 +2458,6 @@ isst_setup ()
 	/* Authentication Info */
 	strcpy (isst.username, "");
 	strcpy (isst.password, "");
-	bu_vls_init (&isst.database);
-	bu_vls_init (&isst.master);
 	isst.connected = 0;
 
 	/* Camera Info */
