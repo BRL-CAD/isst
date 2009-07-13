@@ -1052,6 +1052,8 @@ load_g_project_callback (GtkWidget *widget, gpointer ptr)
     char buf[BUFSIZ];
     int size, i;
 
+    attach_master(&isst.master);
+
     /*
        op = ADRT_NETOP_REQWID;
        tienet_send (isst.socket, &op, 1);
