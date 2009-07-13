@@ -102,7 +102,7 @@ int main(int argc, char **argv) {
     else if(getenv("ADRT_DATABASE"))
 	bu_vls_strcpy(&isst.database, getenv("ADRT_DATABASE"));
     if(getenv("ADRT_MASTER"))
-	bu_vls_strcpy(&isst.database, getenv("ADRT_MASTER"));
+	bu_vls_strcpy(&isst.master, getenv("ADRT_MASTER"));
 
     isst_init ();
 
