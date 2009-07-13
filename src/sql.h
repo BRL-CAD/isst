@@ -32,9 +32,9 @@ int sql_verify(char *username, char *passwd);
 int sql_close();
 
 struct proj_s {
-	struct proj_s *next;
-	int id;
-	char name[64];
+    struct proj_s *next;
+    int id;
+    char name[64];
 };
 
 struct proj_s *sql_projects(int uid);

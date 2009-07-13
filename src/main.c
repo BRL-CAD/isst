@@ -44,69 +44,69 @@
 #ifdef HAVE_GETOPT_LONG
 static struct option longopts[] =
 {
-	{ "help",	no_argument,		NULL, 'h' },
-	{ "build",	no_argument,		NULL, 'b' },
+    { "help",	no_argument,		NULL, 'h' },
+    { "build",	no_argument,		NULL, 'b' },
 };
 #endif
 static char shortopts[] = "hb";
 
 
 static void finish(int sig) {
-  printf("Collected signal %d, aborting!\n", sig);
-  exit(EXIT_FAILURE);
+    printf("Collected signal %d, aborting!\n", sig);
+    exit(EXIT_FAILURE);
 }
 
 
 static void help() {
-  printf("%s\n", ISST_VER_DETAIL);
-  printf("%s\n", "usage: isst [options]\n\
-  -v\t\tdisplay build\n\
-  -h\t\tdisplay help\n");
+    printf("%s\n", ISST_VER_DETAIL);
+    printf("%s\n", "usage: isst [options]\n\
+	    -v\t\tdisplay build\n\
+	    -h\t\tdisplay help\n");
 }
 
 
 int main(int argc, char **argv) {
-  char c = 0;
+    char c = 0;
 
-  signal(SIGINT, finish);
+    signal(SIGINT, finish);
 
-  /* Parse command line options */
-  while((c = 
+    /* Parse command line options */
+    while((c = 
 #ifdef HAVE_GETOPT_LONG
-	getopt_long(argc, argv, shortopts, longopts, NULL)
+		getopt_long(argc, argv, shortopts, longopts, NULL)
 #else
-	getopt(argc, argv, shortopts)
+		getopt(argc, argv, shortopts)
 #endif
-	)!= -1)
-  {
-	  switch(c) {
-		  case 'h':
-			  help();
-			  return EXIT_SUCCESS;
-		  case 'b':
-			  printf("DIVA %s \n", __DATE__);
-			  return EXIT_SUCCESS;
-		default:
-			  help();
-			  return EXIT_FAILURE;
-	  }
-  }
+	  )!= -1)
+    {
+	switch(c) {
+	    case 'h':
+		help();
+		return EXIT_SUCCESS;
+	    case 'b':
+		printf("DIVA %s \n", __DATE__);
+		return EXIT_SUCCESS;
+	    default:
+		help();
+		return EXIT_FAILURE;
+	}
+    }
 
-  argc -= optind;
-  argv += optind;
+    argc -= optind;
+    argv += optind;
 
-  bu_vls_init(&isst.database);
-  bu_vls_init(&isst.master);
-  if(getenv("ADRT_DB"))
-         bu_vls_strcpy(&isst.database, getenv("ADRT_DB"));
-  else if(getenv("ADRT_DATABASE"))
-         bu_vls_strcpy(&isst.database, getenv("ADRT_DATABASE"));
-  if(getenv("ADRT_MASTER"))
-         bu_vls_strcpy(&isst.database, getenv("ADRT_MASTER"));
+    bu_vls_init(&isst.database);
+    bu_vls_init(&isst.master);
+    if(getenv("ADRT_DB"))
+	bu_vls_strcpy(&isst.database, getenv("ADRT_DB"));
+    else if(getenv("ADRT_DATABASE"))
+	bu_vls_strcpy(&isst.database, getenv("ADRT_DATABASE"));
+    if(getenv("ADRT_MASTER"))
+	bu_vls_strcpy(&isst.database, getenv("ADRT_MASTER"));
 
-  isst_init ();
+    isst_init ();
 
-  return EXIT_SUCCESS;
+    return EXIT_SUCCESS;
 }
 
 /*

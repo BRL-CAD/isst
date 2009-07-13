@@ -32,15 +32,15 @@ int isst_setup() { return 0; }
 
 int main(int argc, char **argv)
 {
-	int i;
+    int i;
 
-	if(argc!=2)
-		return 1;
-	i = atoi (argv[1]);
+    if(argc!=2)
+	return 1;
+    i = atoi (argv[1]);
 
-	printf("%d %s\n", i, ADRT_MESSAGE_NAME(i));
-	
-	return 0;
+    printf("%d %s\n", i, ADRT_MESSAGE_NAME(i));
+
+    return 0;
 }
 
 /*

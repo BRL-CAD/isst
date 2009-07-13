@@ -69,29 +69,29 @@
 	_a.index += _d; }
 
 typedef struct tienet_buffer_s {
-  void *data;
-  uint32_t size;
-  uint32_t index;
-  uint32_t incr;
+    void *data;
+    uint32_t size;
+    uint32_t index;
+    uint32_t incr;
 } tienet_buffer_t;
 
 
 typedef struct attributes_s {
-  char name[256];
-  float color[3];
-  float emission;
+    char name[256];
+    float color[3];
+    float emission;
 } attributes_t;
 
 
 typedef struct regmap_s {
-  char name[256];
-  int id;
+    char name[256];
+    int id;
 } regmap_t;
 
 
 typedef struct mesh_map_s {
-  char mesh[256];
-  char attr[256];
+    char mesh[256];
+    char attr[256];
 } mesh_map_t;
 
 
@@ -108,25 +108,25 @@ tienet_buffer_t attr;
 
 
 void regmap_lookup(char *name, int id) {
-  int i;
+    int i;
 
-  for(i = 0; i < regmap_num; i++) {
-    if(id == regmap_list[i].id) {
-      strcpy(name, regmap_list[i].name);
-      continue;
+    for(i = 0; i < regmap_num; i++) {
+	if(id == regmap_list[i].id) {
+	    strcpy(name, regmap_list[i].name);
+	    continue;
+	}
     }
-  }
 }
 
 
 /*
-*  r e g i o n _ n a m e _ f r o m _ p a t h
-*
-*  Walk backwards up the tree to the first region, then
-*  make a vls string of everything at or above that level.
-*  Basically, it produces the name of the region to which 
-*  the leaf of the path contributes. 
-*/
+ *  r e g i o n _ n a m e _ f r o m _ p a t h
+ *
+ *  Walk backwards up the tree to the first region, then
+ *  make a vls string of everything at or above that level.
+ *  Basically, it produces the name of the region to which 
+ *  the leaf of the path contributes. 
+ */
 struct bu_vls* region_name_from_path(struct db_full_path *pathp) {
     int i, j;
     struct bu_vls *vls;
@@ -140,15 +140,15 @@ struct bu_vls* region_name_from_path(struct db_full_path *pathp) {
 #if DEBUG
     bu_log("didn't find region on path %s\n", db_path_to_string( pathp ));
 #endif
-/*    abort(); */
+    /*    abort(); */
 
- found_region:
+found_region:
     vls = bu_malloc(sizeof(struct bu_vls), "region name");
     bu_vls_init( vls );
 
     for(j = 0; j <= i; j++) {
-      bu_vls_strcat(vls, "/");
-      bu_vls_strcat(vls, pathp->fp_names[j]->d_namep);
+	bu_vls_strcat(vls, "/");
+	bu_vls_strcat(vls, pathp->fp_names[j]->d_namep);
     }
 
     return vls;
@@ -158,71 +158,71 @@ struct bu_vls* region_name_from_path(struct db_full_path *pathp) {
 
 
 /*
-*  r e g _ s t a r t _ f u n c
-*  Called by the tree walker when it first encounters a region
-*/
+ *  r e g _ s t a r t _ f u n c
+ *  Called by the tree walker when it first encounters a region
+ */
 static int reg_start_func(struct db_tree_state *tsp,
-			  struct db_full_path *pathp,
-			  const struct rt_comb_internal *combp,
-			  genptr_t client_data)
+	struct db_full_path *pathp,
+	const struct rt_comb_internal *combp,
+	genptr_t client_data)
 {
-  char name[256], found;
-  unsigned color[3];
-  int i;
+    char name[256], found;
+    unsigned color[3];
+    int i;
 
-  /* color is here
-   *    combp->rgb[3];
-   *
-   * phong attributes are probably here:
-   *	bu_vls_addr(combp->shader)
-   */
+    /* color is here
+     *    combp->rgb[3];
+     *
+     * phong attributes are probably here:
+     *	bu_vls_addr(combp->shader)
+     */
 
-  /* If no color is found, assign them a 75% gray color */
-  color[0] = combp->rgb[0];
-  color[1] = combp->rgb[1];
-  color[2] = combp->rgb[2];
+    /* If no color is found, assign them a 75% gray color */
+    color[0] = combp->rgb[0];
+    color[1] = combp->rgb[1];
+    color[2] = combp->rgb[2];
 
-  if(color[0]+color[1]+color[2] == 0) {
-    color[0] = 192;
-    color[1] = 192;
-    color[2] = 192;
-  }
+    if(color[0]+color[1]+color[2] == 0) {
+	color[0] = 192;
+	color[1] = 192;
+	color[2] = 192;
+    }
 
-  /* Do a lookup conversion on the name with the region map if used */
-  strcpy(name, pathp->fp_names[pathp->fp_len-1]->d_namep);
+    /* Do a lookup conversion on the name with the region map if used */
+    strcpy(name, pathp->fp_names[pathp->fp_len-1]->d_namep);
 
-  /* If name is null, skip it */
-  if(!strlen(name))
+    /* If name is null, skip it */
+    if(!strlen(name))
+	return(0);
+
+    /* replace the BRL-CAD name with the regmap name */
+    if(use_regmap)
+	regmap_lookup(name, tsp->ts_regionid);
+
+    found = 0;
+    for(i = 0; i < attr_num; i++) {
+	if(!strcmp(attr_list[i].name, name)) {
+	    found = 1;
+	    continue;
+	}
+    }
+
+    if(!found) {
+	attr_list = (attributes_t *)realloc(attr_list, sizeof(attributes_t) * (attr_num + 1));
+	strcpy(attr_list[attr_num].name, name);
+	attr_list[attr_num].color[0] = color[0] / 255.0;
+	attr_list[attr_num].color[1] = color[1] / 255.0;
+	attr_list[attr_num].color[2] = color[2] / 255.0;
+	if(strstr(bu_vls_strgrab((struct vu_vls *)&(combp->shader)), "light")) {
+	    attr_list[attr_num].emission = 1.0;
+	} else {
+	    attr_list[attr_num].emission = 0.0;
+	}
+	attr_num++;
+    }
+    /*    printf("reg_start: -%s- [%d,%d,%d]\n", name, combp->rgb[0], combp->rgb[1], combp->rgb[2]); */
+
     return(0);
-
-  /* replace the BRL-CAD name with the regmap name */
-  if(use_regmap)
-    regmap_lookup(name, tsp->ts_regionid);
-
-  found = 0;
-  for(i = 0; i < attr_num; i++) {
-    if(!strcmp(attr_list[i].name, name)) {
-      found = 1;
-      continue;
-    }
-  }
-
-  if(!found) {
-    attr_list = (attributes_t *)realloc(attr_list, sizeof(attributes_t) * (attr_num + 1));
-    strcpy(attr_list[attr_num].name, name);
-    attr_list[attr_num].color[0] = color[0] / 255.0;
-    attr_list[attr_num].color[1] = color[1] / 255.0;
-    attr_list[attr_num].color[2] = color[2] / 255.0;
-    if(strstr(bu_vls_strgrab((struct vu_vls *)&(combp->shader)), "light")) {
-      attr_list[attr_num].emission = 1.0;
-    } else {
-      attr_list[attr_num].emission = 0.0;
-    }
-    attr_num++;
-  }
-/*    printf("reg_start: -%s- [%d,%d,%d]\n", name, combp->rgb[0], combp->rgb[1], combp->rgb[2]); */
-
-  return(0);
 }
 
 
@@ -233,11 +233,11 @@ static int reg_start_func(struct db_tree_state *tsp,
 *  ie. all primitives have been processed
 */
 static union tree* reg_end_func(struct db_tree_state *tsp,
-                                struct db_full_path *pathp,
-                                union tree *curtree,
-                                genptr_t client_data)
+	struct db_full_path *pathp,
+	union tree *curtree,
+	genptr_t client_data)
 {
-  return(NULL);
+    return(NULL);
 }
 
 
@@ -295,12 +295,12 @@ static union tree *leaf_func(struct db_tree_state *tsp,
 	    }
 	}
 	fprintf(stderr, "didn't find region?\n");
-    found:
+found:
 #endif
-      return(TREE_NULL); /* BAD */
+	return(TREE_NULL); /* BAD */
     }
 
-/*    printf("region_id: %d\n", tsp->ts_regionid); */
+    /*    printf("region_id: %d\n", tsp->ts_regionid); */
 
     bot = (struct rt_bot_internal *)ip->idb_ptr;
     RT_BOT_CK_MAGIC(bot);
@@ -311,12 +311,12 @@ static union tree *leaf_func(struct db_tree_state *tsp,
 
 
     if(use_regmap) {
-      vlsp = region_name_from_path(pathp);
-      strcpy(mesh_name, bu_vls_strgrab(vlsp));
-      regmap_lookup(mesh_name, tsp->ts_regionid);
-      bu_free(vlsp, "vls");
+	vlsp = region_name_from_path(pathp);
+	strcpy(mesh_name, bu_vls_strgrab(vlsp));
+	regmap_lookup(mesh_name, tsp->ts_regionid);
+	bu_free(vlsp, "vls");
     } else {
-      strcpy(mesh_name, db_path_to_string(pathp));
+	strcpy(mesh_name, db_path_to_string(pathp));
     }
 
     vlsp = region_name_from_path(pathp);
@@ -326,16 +326,16 @@ static union tree *leaf_func(struct db_tree_state *tsp,
 
     /* if name is null, assign default attribute */
     if(!strlen(attr_name))
-      strcpy(attr_name, "default");
+	strcpy(attr_name, "default");
 
     /* Grab the chars from the end till the '/' */
     i = strlen(attr_name)-1;
     if(i >= 0)
-      while(attr_name[i] != '/' && i > 0)
-        i--;
+	while(attr_name[i] != '/' && i > 0)
+	    i--;
 
     if(i != strlen(attr_name))
-      strcpy(attr_name, &attr_name[i+1]);
+	strcpy(attr_name, &attr_name[i+1]);
 
     /* Display Status */
     printf("bots processed: %d\r", ++bot_count);
@@ -375,41 +375,41 @@ static union tree *leaf_func(struct db_tree_state *tsp,
     TIENET_BUFFER_WRITE(geom, geom.index, &bot->num_vertices, sizeof(uint32_t));
 
     for(i = 0; i < bot->num_vertices; i++) {
-      /* Change scale from mm to meters */
-      vec[0] = bot->vertices[3*i+0] * 0.001;
-      vec[1] = bot->vertices[3*i+1] * 0.001;
-      vec[2] = bot->vertices[3*i+2] * 0.001;
+	/* Change scale from mm to meters */
+	vec[0] = bot->vertices[3*i+0] * 0.001;
+	vec[1] = bot->vertices[3*i+1] * 0.001;
+	vec[2] = bot->vertices[3*i+2] * 0.001;
 
-      TIENET_BUFFER_WRITE(geom, geom.index, vec, 3 * sizeof(float));
+	TIENET_BUFFER_WRITE(geom, geom.index, vec, 3 * sizeof(float));
     }
 
     /* Add to total number of triangles */
     total_tri_num += bot->num_faces;
 
     if(bot->num_faces < 1<<16) {
-      unsigned short ind;
+	unsigned short ind;
 
-      TIENET_BUFFER_SIZE(geom, geom.index + 1 + (3 * bot->num_faces + 1) * sizeof(uint16_t));
+	TIENET_BUFFER_SIZE(geom, geom.index + 1 + (3 * bot->num_faces + 1) * sizeof(uint16_t));
 
-      /* using unsigned 16-bit */
-      c = 0;
-      TIENET_BUFFER_WRITE(geom, geom.index, &c, 1);
+	/* using unsigned 16-bit */
+	c = 0;
+	TIENET_BUFFER_WRITE(geom, geom.index, &c, 1);
 
-      /* Pack number of faces */
-      ind = bot->num_faces;
-      TIENET_BUFFER_WRITE(geom, geom.index, &ind, sizeof(uint16_t));
-      for(i = 0; i < 3 * bot->num_faces; i++) {
-        ind = bot->faces[i];
-        TIENET_BUFFER_WRITE(geom, geom.index, &ind, sizeof(uint16_t));
-      }
+	/* Pack number of faces */
+	ind = bot->num_faces;
+	TIENET_BUFFER_WRITE(geom, geom.index, &ind, sizeof(uint16_t));
+	for(i = 0; i < 3 * bot->num_faces; i++) {
+	    ind = bot->faces[i];
+	    TIENET_BUFFER_WRITE(geom, geom.index, &ind, sizeof(uint16_t));
+	}
     } else {
-      TIENET_BUFFER_SIZE(geom, geom.index + 1 + (3 * bot->num_faces + 1) * sizeof(uint32_t));
+	TIENET_BUFFER_SIZE(geom, geom.index + 1 + (3 * bot->num_faces + 1) * sizeof(uint32_t));
 
-      /* using unsigned 32-bit */
-      c = 1;
-      TIENET_BUFFER_WRITE(geom, geom.index, &c, 1);
-      TIENET_BUFFER_WRITE(geom, geom.index, &bot->num_faces, sizeof(uint32_t));
-      TIENET_BUFFER_WRITE(geom, geom.index, bot->faces, 3 * bot->num_faces * sizeof(uint32_t));
+	/* using unsigned 32-bit */
+	c = 1;
+	TIENET_BUFFER_WRITE(geom, geom.index, &c, 1);
+	TIENET_BUFFER_WRITE(geom, geom.index, &bot->num_faces, sizeof(uint32_t));
+	TIENET_BUFFER_WRITE(geom, geom.index, bot->faces, 3 * bot->num_faces * sizeof(uint32_t));
     }
 
     hash = db_dirhash( dp->d_namep );
@@ -441,12 +441,12 @@ static union tree *leaf_func(struct db_tree_state *tsp,
     /*    stp->st_meth = &adrt_functab; */
     curtree->tr_a.tu_stp = stp;
 
-/*    ACQUIRE_SEMAPHORE_TREE(hash); */
+    /*    ACQUIRE_SEMAPHORE_TREE(hash); */
 #if 0
     BU_LIST_INSERT( &(rtip->rti_solidheads[hash]), &(stp->l) );
     BU_LIST_INSERT( &dp->d_use_hd, &(stp->l2) );
 #endif
-/*    RELEASE_SEMAPHORE_TREE(hash); */
+    /*    RELEASE_SEMAPHORE_TREE(hash); */
 
     /*    bu_log("tree:0x%08x  stp:0x%08x\n", curtree, stp); */
 
@@ -455,221 +455,221 @@ static union tree *leaf_func(struct db_tree_state *tsp,
 
 
 void load_regmap(char *filename) {
-  FILE *fh;
-  char line[256], name[256], idstr[20], *ptr;
-  int i, ind, id;
+    FILE *fh;
+    char line[256], name[256], idstr[20], *ptr;
+    int i, ind, id;
 
-  regmap_num = 0;
-  regmap_list = NULL;
+    regmap_num = 0;
+    regmap_list = NULL;
 
-  fh = fopen(filename, "r");
-  if(!fh) {
-    printf("region map file \"%s\" not found.\n", filename);
-    return;
-  } else {
-    printf("using region map: %s\n", filename);
-  }
-
-  while(!feof(fh)) {
-    /* read in the line */
-    fgets(line, 256, fh);
-
-    /* strip off the new line */
-    line[strlen(line)-1] = 0;
-
-    /* replace any tabs with spaces */
-    for(i = 0; i < strlen(line); i++)
-      if(line[i] == '\t')
-        line[i] = ' ';
-
-    /* advance to the first non-space */
-    ind = 0;
-    while(line[ind] == ' ')
-      ind++;
-
-    /* If there is a '#' comment here then continue */
-    if(line[ind] == '#')
-      continue;
-
-    /* advance to the first space while reading the name */
-    i = 0;
-    while(i < 256 && line[ind] != ' ' && ind < strlen(line))
-      name[i++] = line[ind++];
-    name[i] = 0;
-
-    /* skip any lines that are empty */
-    if(!strlen(name))
-      continue;
-
-    /* begin parsing the id's */
-    while(ind < strlen(line)) {
-      /* advance to the first id */
-      while(line[ind] == ' ')
-        ind++;
-
-      /* check for comment */
-      if(line[ind] == '#')
-        break;
-
-      /* advance to the first space while reading the id string */
-      i = 0;
-      while(i < 256 && line[ind] != ' ' && ind < strlen(line))
-        idstr[i++] = line[ind++];
-      idstr[i] = 0;
-
-      /* chesk that there were no spaces after the last id */
-      if(!strlen(idstr))
-        break;
-
-      /* if the id string contains a ':' then it's a range */
-      if(strstr(idstr, ":")) {
-        int hi, lo;
-
-        ptr = strchr(idstr, ':');
-        ptr++;
-        hi = atoi(ptr);
-        strchr(idstr, ':')[0] = 0;
-        lo = atoi(idstr);
-
-        /* insert an entry for the whole range */
-        for(i = 0; i <= hi-lo; i++) {
-          /* Insert one entry into the regmap_list */
-          regmap_list = (regmap_t *)realloc(regmap_list, sizeof(regmap_t) * (regmap_num + 1));
-          strcpy(regmap_list[regmap_num].name, name);
-          regmap_list[regmap_num].id = lo + i;
-          regmap_num++;
-        }
-      } else {
-        /* insert one entry into the regmap_list */
-        regmap_list = (regmap_t *)realloc(regmap_list, sizeof(regmap_t) * (regmap_num + 1));
-        strcpy(regmap_list[regmap_num].name, name);
-        regmap_list[regmap_num].id = atoi(idstr);
-        regmap_num++;
-      }
+    fh = fopen(filename, "r");
+    if(!fh) {
+	printf("region map file \"%s\" not found.\n", filename);
+	return;
+    } else {
+	printf("using region map: %s\n", filename);
     }
-  }
+
+    while(!feof(fh)) {
+	/* read in the line */
+	fgets(line, 256, fh);
+
+	/* strip off the new line */
+	line[strlen(line)-1] = 0;
+
+	/* replace any tabs with spaces */
+	for(i = 0; i < strlen(line); i++)
+	    if(line[i] == '\t')
+		line[i] = ' ';
+
+	/* advance to the first non-space */
+	ind = 0;
+	while(line[ind] == ' ')
+	    ind++;
+
+	/* If there is a '#' comment here then continue */
+	if(line[ind] == '#')
+	    continue;
+
+	/* advance to the first space while reading the name */
+	i = 0;
+	while(i < 256 && line[ind] != ' ' && ind < strlen(line))
+	    name[i++] = line[ind++];
+	name[i] = 0;
+
+	/* skip any lines that are empty */
+	if(!strlen(name))
+	    continue;
+
+	/* begin parsing the id's */
+	while(ind < strlen(line)) {
+	    /* advance to the first id */
+	    while(line[ind] == ' ')
+		ind++;
+
+	    /* check for comment */
+	    if(line[ind] == '#')
+		break;
+
+	    /* advance to the first space while reading the id string */
+	    i = 0;
+	    while(i < 256 && line[ind] != ' ' && ind < strlen(line))
+		idstr[i++] = line[ind++];
+	    idstr[i] = 0;
+
+	    /* chesk that there were no spaces after the last id */
+	    if(!strlen(idstr))
+		break;
+
+	    /* if the id string contains a ':' then it's a range */
+	    if(strstr(idstr, ":")) {
+		int hi, lo;
+
+		ptr = strchr(idstr, ':');
+		ptr++;
+		hi = atoi(ptr);
+		strchr(idstr, ':')[0] = 0;
+		lo = atoi(idstr);
+
+		/* insert an entry for the whole range */
+		for(i = 0; i <= hi-lo; i++) {
+		    /* Insert one entry into the regmap_list */
+		    regmap_list = (regmap_t *)realloc(regmap_list, sizeof(regmap_t) * (regmap_num + 1));
+		    strcpy(regmap_list[regmap_num].name, name);
+		    regmap_list[regmap_num].id = lo + i;
+		    regmap_num++;
+		}
+	    } else {
+		/* insert one entry into the regmap_list */
+		regmap_list = (regmap_t *)realloc(regmap_list, sizeof(regmap_t) * (regmap_num + 1));
+		strcpy(regmap_list[regmap_num].name, name);
+		regmap_list[regmap_num].id = atoi(idstr);
+		regmap_num++;
+	    }
+	}
+    }
 }
 
 
 int main(int argc, char *argv[]) {
-  MYSQL mysql_db;
-  MYSQL_RES *res;
-  MYSQL_ROW row;
-  struct db_tree_state ts;
-  struct directory *dp;
-  int i;
-  uint16_t s;
-  uint32_t gid;
-  char idbuf[132], filename[256];
-  char query_head[256], query_tail[256], c;
-  unsigned char len;
+    MYSQL mysql_db;
+    MYSQL_RES *res;
+    MYSQL_ROW row;
+    struct db_tree_state ts;
+    struct directory *dp;
+    int i;
+    uint16_t s;
+    uint32_t gid;
+    char idbuf[132], filename[256];
+    char query_head[256], query_tail[256], c;
+    unsigned char len;
 
 
-  if(argc <= 4) {
-    printf("Usage: g-adrt [-r region.map] file.g mysql_hostname name_for_geometry [region list]\n");
-    exit(1);
-  }
-
-  /* Initialize MySQL */
-  mysql_init(&mysql_db);
-  if(!mysql_real_connect(&mysql_db, argv[2], MYSQL_USER, MYSQL_PASS, MYSQL_DB, 0, 0, 0)) {
-    printf("Connection failed\n");
-    return;
-  }
-
-  /* Initialize geom and attr data buffers */
-  TIENET_BUFFER_INIT(geom, M8);
-  TIENET_BUFFER_INIT(attr, M8);
-
-  /* write 2-byte endian */
-  s = 1;
-  TIENET_BUFFER_SIZE(geom, geom.index + sizeof(uint16_t));
-  TIENET_BUFFER_WRITE(geom, geom.index, &s, sizeof(uint16_t));
-
-
-  bot_count = 0;
-  mesh_map_ind = 0;
-  attr_num = 0;
-  attr_list = NULL;
-  mesh_map = NULL;
-
-
-  /*
-  * Load database.
-  * rt_dirbuild() returns an "instance" pointer which describes
-  * the database to be ray traced.  It also gives you back the
-  * title string in the header (ID) record.
-  */
-
-  if((rtip = rt_dirbuild(argv[1], idbuf, sizeof(idbuf))) == RTI_NULL) {
-    fprintf(stderr,"rtexample: rt_dirbuild failure\n");
-    exit(2);
-  }
-
-  ts = rt_initial_tree_state;
-  ts.ts_dbip = rtip->rti_dbip;
-  ts.ts_rtip = rtip;
-  ts.ts_resp = NULL;
-  bu_avs_init(&ts.ts_attrs, 1, "avs in tree_state");
-
-  /*
-  * Generage geometry data
-  */
-  db_walk_tree(rtip->rti_dbip, argc - 4, (const char **)&argv[4], 1, &ts, &reg_start_func, &reg_end_func, &leaf_func, (void *)0);
-
-  /*
-  * Insert geometry data into database
-  */
-  {
-    tienet_buffer_t temp;
-
-    TIENET_BUFFER_INIT(temp, M8);
-    TIENET_BUFFER_SIZE(temp, geom.index * 2 + 1);
-    temp.index = mysql_real_escape_string(&mysql_db, temp.data, geom.data, geom.index);
-
-    /* The Query */
-    sprintf(query_head, "insert into geometry values('', '%s', '%d', '%d', '%d', '", argv[3], total_tri_num, bot_count, geom.index);
-    sprintf(query_tail, "', 0, '')");
-    TIENET_BUFFER_SIZE(geom, temp.index + strlen(query_head) + strlen(query_tail));
-    geom.index = 0;
-    TIENET_BUFFER_WRITE(geom, geom.index, query_head, strlen(query_head));
-    TIENET_BUFFER_WRITE(geom, geom.index, temp.data, temp.index);
-    TIENET_BUFFER_WRITE(geom, geom.index, query_tail, strlen(query_tail));
-
-    mysql_real_query(&mysql_db, (const char *)geom.data, geom.index);
-    gid = mysql_insert_id(&mysql_db);
-
-    TIENET_BUFFER_FREE(temp);
-  }
-
-
-  /*
-  * Populate attributes table
-  */
-  sprintf(query_head, "insert into attributes values('', '%d', '%s', '%s', '%.3f %.3f %.3f')", gid, "default", "color", 0.8, 0.8, 0.8);
-  mysql_real_query(&mysql_db, (const char *)query_head, strlen(query_head));
-
-  for(i = 0; i < attr_num; i++) {
-    sprintf(query_head, "insert into attributes values('', '%d', '%s', '%s', '%.3f %.3f %.3f')", gid, attr_list[i].name, "color", attr_list[i].color[0], attr_list[i].color[1], attr_list[i].color[2]);
-    mysql_real_query(&mysql_db, (const char *)query_head, strlen(query_head));
-    if(attr_list[i].emission > 0.0) {
-      sprintf(query_head, "insert into attributes values('', '%d', '%s', '%s', '%.3f')", gid, attr_list[i].name, "emission", attr_list[i].emission);
-      mysql_real_query(&mysql_db, (const char *)query_head, strlen(query_head));
+    if(argc <= 4) {
+	printf("Usage: g-adrt [-r region.map] file.g mysql_hostname name_for_geometry [region list]\n");
+	exit(1);
     }
-  }
+
+    /* Initialize MySQL */
+    mysql_init(&mysql_db);
+    if(!mysql_real_connect(&mysql_db, argv[2], MYSQL_USER, MYSQL_PASS, MYSQL_DB, 0, 0, 0)) {
+	printf("Connection failed\n");
+	return;
+    }
+
+    /* Initialize geom and attr data buffers */
+    TIENET_BUFFER_INIT(geom, M8);
+    TIENET_BUFFER_INIT(attr, M8);
+
+    /* write 2-byte endian */
+    s = 1;
+    TIENET_BUFFER_SIZE(geom, geom.index + sizeof(uint16_t));
+    TIENET_BUFFER_WRITE(geom, geom.index, &s, sizeof(uint16_t));
 
 
-  /*
-  * Generate a mesh map file
-  */
-  for(i = 0; i < mesh_map_ind; i++) {
-    sprintf(query_head, "insert into meshattrmap values('', '%d', '%s', '%s')", gid, mesh_map[i].mesh, mesh_map[i].attr);
+    bot_count = 0;
+    mesh_map_ind = 0;
+    attr_num = 0;
+    attr_list = NULL;
+    mesh_map = NULL;
+
+
+    /*
+     * Load database.
+     * rt_dirbuild() returns an "instance" pointer which describes
+     * the database to be ray traced.  It also gives you back the
+     * title string in the header (ID) record.
+     */
+
+    if((rtip = rt_dirbuild(argv[1], idbuf, sizeof(idbuf))) == RTI_NULL) {
+	fprintf(stderr,"rtexample: rt_dirbuild failure\n");
+	exit(2);
+    }
+
+    ts = rt_initial_tree_state;
+    ts.ts_dbip = rtip->rti_dbip;
+    ts.ts_rtip = rtip;
+    ts.ts_resp = NULL;
+    bu_avs_init(&ts.ts_attrs, 1, "avs in tree_state");
+
+    /*
+     * Generage geometry data
+     */
+    db_walk_tree(rtip->rti_dbip, argc - 4, (const char **)&argv[4], 1, &ts, &reg_start_func, &reg_end_func, &leaf_func, (void *)0);
+
+    /*
+     * Insert geometry data into database
+     */
+    {
+	tienet_buffer_t temp;
+
+	TIENET_BUFFER_INIT(temp, M8);
+	TIENET_BUFFER_SIZE(temp, geom.index * 2 + 1);
+	temp.index = mysql_real_escape_string(&mysql_db, temp.data, geom.data, geom.index);
+
+	/* The Query */
+	sprintf(query_head, "insert into geometry values('', '%s', '%d', '%d', '%d', '", argv[3], total_tri_num, bot_count, geom.index);
+	sprintf(query_tail, "', 0, '')");
+	TIENET_BUFFER_SIZE(geom, temp.index + strlen(query_head) + strlen(query_tail));
+	geom.index = 0;
+	TIENET_BUFFER_WRITE(geom, geom.index, query_head, strlen(query_head));
+	TIENET_BUFFER_WRITE(geom, geom.index, temp.data, temp.index);
+	TIENET_BUFFER_WRITE(geom, geom.index, query_tail, strlen(query_tail));
+
+	mysql_real_query(&mysql_db, (const char *)geom.data, geom.index);
+	gid = mysql_insert_id(&mysql_db);
+
+	TIENET_BUFFER_FREE(temp);
+    }
+
+
+    /*
+     * Populate attributes table
+     */
+    sprintf(query_head, "insert into attributes values('', '%d', '%s', '%s', '%.3f %.3f %.3f')", gid, "default", "color", 0.8, 0.8, 0.8);
     mysql_real_query(&mysql_db, (const char *)query_head, strlen(query_head));
-  }
 
-  printf("\ncomplete: %d triangles.\n", total_tri_num);
+    for(i = 0; i < attr_num; i++) {
+	sprintf(query_head, "insert into attributes values('', '%d', '%s', '%s', '%.3f %.3f %.3f')", gid, attr_list[i].name, "color", attr_list[i].color[0], attr_list[i].color[1], attr_list[i].color[2]);
+	mysql_real_query(&mysql_db, (const char *)query_head, strlen(query_head));
+	if(attr_list[i].emission > 0.0) {
+	    sprintf(query_head, "insert into attributes values('', '%d', '%s', '%s', '%.3f')", gid, attr_list[i].name, "emission", attr_list[i].emission);
+	    mysql_real_query(&mysql_db, (const char *)query_head, strlen(query_head));
+	}
+    }
 
-  mysql_close(&mysql_db);
+
+    /*
+     * Generate a mesh map file
+     */
+    for(i = 0; i < mesh_map_ind; i++) {
+	sprintf(query_head, "insert into meshattrmap values('', '%d', '%s', '%s')", gid, mesh_map[i].mesh, mesh_map[i].attr);
+	mysql_real_query(&mysql_db, (const char *)query_head, strlen(query_head));
+    }
+
+    printf("\ncomplete: %d triangles.\n", total_tri_num);
+
+    mysql_close(&mysql_db);
 }
 
 

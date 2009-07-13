@@ -47,72 +47,72 @@
 
 enum
 {
-  ISST_MODE_SHADED,
-  ISST_MODE_COMPONENT,
-  ISST_MODE_NORMAL,
-  ISST_MODE_DEPTH,
-  ISST_MODE_SHOTLINE,
-  ISST_MODE_CUT,
-  ISST_MODE_FLOS,
-  ISST_MODE_BAD,
-  ISST_MODES
+    ISST_MODE_SHADED,
+    ISST_MODE_COMPONENT,
+    ISST_MODE_NORMAL,
+    ISST_MODE_DEPTH,
+    ISST_MODE_SHOTLINE,
+    ISST_MODE_CUT,
+    ISST_MODE_FLOS,
+    ISST_MODE_BAD,
+    ISST_MODES
 };
 
 typedef struct isst_s
 {
-  /* general */
-  char username[32];
-  char password[32];
-  struct bu_vls database;
-  struct bu_vls master;
-  int32_t uid;
-  int32_t pid;
-  uint16_t wid;
-  uint8_t connected;
-  MYSQL mysql_db;
-  int socket;
-  uint16_t endian;
-  uint8_t mode;
-  uint8_t mode_updated;
+    /* general */
+    char username[32];
+    char password[32];
+    struct bu_vls database;
+    struct bu_vls master;
+    int32_t uid;
+    int32_t pid;
+    uint16_t wid;
+    uint8_t connected;
+    MYSQL mysql_db;
+    int socket;
+    uint16_t endian;
+    uint8_t mode;
+    uint8_t mode_updated;
 
-  /* geometry */
-  TIE_3 geom_min;
-  TIE_3 geom_max;
-  TIE_3 geom_center;
-  tfloat geom_radius;
+    /* geometry */
+    TIE_3 geom_min;
+    TIE_3 geom_max;
+    TIE_3 geom_center;
+    tfloat geom_radius;
 
-  /* camera */
-  TIE_3 camera_pos;
-  TIE_3 camera_foc;
-  tfloat camera_az;
-  tfloat camera_el;
-  tfloat camera_fov;
-  tfloat camera_grid;
-  uint8_t camera_type;
+    /* camera */
+    TIE_3 camera_pos;
+    TIE_3 camera_foc;
+    tfloat camera_az;
+    tfloat camera_el;
+    tfloat camera_fov;
+    tfloat camera_grid;
+    uint8_t camera_type;
 
-  /* shotline */
-  TIE_3 shotline_pos;
-  TIE_3 shotline_dir;
+    /* shotline */
+    TIE_3 shotline_pos;
+    TIE_3 shotline_dir;
 
-  /* buffers */
-  tienet_buffer_t buffer;
-  tienet_buffer_t buffer_comp;
-  tienet_buffer_t buffer_image;
+    /* buffers */
+    tienet_buffer_t buffer;
+    tienet_buffer_t buffer_comp;
+    tienet_buffer_t buffer_image;
 
-  /* input */
-  int16_t mouse_x;
-  int16_t mouse_y;
-  tfloat mouse_speed;
+    /* input */
+    int16_t mouse_x;
+    int16_t mouse_y;
+    tfloat mouse_speed;
 
-  /* miscellaneous */
-  uint8_t update_avail;
-  uint8_t update_idle;
-  pthread_mutex_t update_mut;
+    /* miscellaneous */
+    uint8_t update_avail;
+    uint8_t update_idle;
+    pthread_mutex_t update_mut;
 
-  uint8_t notebook_index[ISST_MODES];
+    uint8_t notebook_index[ISST_MODES];
 
-  void (*work_frame)(void);
-  gpointer (*worker)(gpointer trash);
+    void (*work_frame)(void);
+    gpointer (*worker)(gpointer trash);
 } isst_t;
 
 extern uint8_t isst_flags;

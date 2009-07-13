@@ -45,80 +45,80 @@
 
 static int sql_connected = 0;
 
-int
+    int
 sql_connect(char *host)
 {
-	sql_connected = mysql_real_connect(&isst.mysql_db, bu_vls_addr(&isst.database), ISST_MYSQL_USER, ISST_MYSQL_PASS, ISST_MYSQL_DB, 0, 0, 0)?1:0;
-	return sql_connected;
+    sql_connected = mysql_real_connect(&isst.mysql_db, bu_vls_addr(&isst.database), ISST_MYSQL_USER, ISST_MYSQL_PASS, ISST_MYSQL_DB, 0, 0, 0)?1:0;
+    return sql_connected;
 }
 
 int
 sql_verify(char *username, char *passwd){
-	int uid = 1;
+    int uid = 1;
 #ifndef HAX
-	MYSQL_RES *res;
-	MYSQL_ROW row;
+    MYSQL_RES *res;
+    MYSQL_ROW row;
 
-	sprintf(query, "select (select password from user where username = '%s') = Password('%s')", isst.username, isst.password);
-	if(mysql_query(&isst.mysql_db, query)) {
-		gtk_label_set_text(GTK_LABEL (status), "Status: Database Nonexistent");
-		mysql_close(&isst.mysql_db);
-		return;
-	}
+    sprintf(query, "select (select password from user where username = '%s') = Password('%s')", isst.username, isst.password);
+    if(mysql_query(&isst.mysql_db, query)) {
+	gtk_label_set_text(GTK_LABEL (status), "Status: Database Nonexistent");
+	mysql_close(&isst.mysql_db);
+	return;
+    }
 
-	res = mysql_use_result(&isst.mysql_db);
-	row = mysql_fetch_row(res);
+    res = mysql_use_result(&isst.mysql_db);
+    row = mysql_fetch_row(res);
 
-	if(row[0] == NULL || !strcmp("NULL", row[0])) {
-		gtk_label_set_text(GTK_LABEL (status), "Status: Authentication Failed");
-		mysql_close(&isst.mysql_db);
-		return;
-	}
-	
-	sprintf(query, "select uid from user where username = '%s'", GTK_ENTRY (username)->text);
-	mysql_query(&isst.mysql_db, query);
+    if(row[0] == NULL || !strcmp("NULL", row[0])) {
+	gtk_label_set_text(GTK_LABEL (status), "Status: Authentication Failed");
+	mysql_close(&isst.mysql_db);
+	return;
+    }
 
-	res = mysql_use_result (&isst.mysql_db);
-	row = mysql_fetch_row (res);
-	uid = atoi (row[0]);
-	mysql_free_result (res);
+    sprintf(query, "select uid from user where username = '%s'", GTK_ENTRY (username)->text);
+    mysql_query(&isst.mysql_db, query);
+
+    res = mysql_use_result (&isst.mysql_db);
+    row = mysql_fetch_row (res);
+    uid = atoi (row[0]);
+    mysql_free_result (res);
 #endif
-	return uid;
+    return uid;
 }
 
-int
+    int
 sql_close()
 {
-	mysql_close(&isst.mysql_db);
-	return 0;
+    mysql_close(&isst.mysql_db);
+    return 0;
 }
 
-struct proj_s *
+    struct proj_s *
 sql_projects(int uid)
 {
-	char query[BUFSIZ];
-	MYSQL_RES *res;
-	MYSQL_ROW row;
-	struct proj_s *ret = NULL, *p;
-	int i;
+    char query[BUFSIZ];
+    MYSQL_RES *res;
+    MYSQL_ROW row;
+    struct proj_s *ret = NULL, *p;
+    int i;
 
-	sprintf (query, "select pid,name from project where uid='%d'", isst.uid);
-	mysql_query (&isst.mysql_db, query);
-	res = mysql_use_result (&isst.mysql_db);
+    sprintf (query, "select pid,name from project where uid='%d'", isst.uid);
+    mysql_query (&isst.mysql_db, query);
+    res = mysql_use_result (&isst.mysql_db);
 
-	while ( row = mysql_fetch_row (res) ) {
-		if(ret == NULL)
-			ret = p = (struct proj_s *)malloc(sizeof(struct proj_s));
-		else {
-			p->next = (struct proj_s *)malloc(sizeof(struct proj_s));
-			p = p->next;
-		}
-		p->id = atoi(row[0]);
-		strncpy(p->name, row[1], 64);
-		p->next = NULL;
+    while ( row = mysql_fetch_row (res) ) {
+	if(ret == NULL)
+	    ret = p = (struct proj_s *)malloc(sizeof(struct proj_s));
+	else {
+	    p->next = (struct proj_s *)malloc(sizeof(struct proj_s));
+	    p = p->next;
 	}
-	mysql_free_result (res);
-	return ret;
+	p->id = atoi(row[0]);
+	strncpy(p->name, row[1], 64);
+	p->next = NULL;
+    }
+    mysql_free_result (res);
+    return ret;
 }
 
 /*
