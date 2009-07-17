@@ -98,7 +98,7 @@ isst_t isst;
     V3DIR_FROM_AZEL( isst.camera_foc.v, isst.camera_az * DEG2RAD, isst.camera_el * DEG2RAD ); \
 	VSUB2( isst.camera_foc.v, isst.camera_pos.v, isst.camera_foc.v); }
 
-    static void
+static void
 generic_dialog (char *message)
 {
     GtkWidget *dialog;
@@ -116,7 +116,7 @@ generic_dialog (char *message)
 }
 
 
-    static void
+static void
 isst_project_widgets ()
 {
     GtkWidget *widget;
@@ -134,7 +134,7 @@ isst_project_widgets ()
 #undef SWIDG
 }
 
-    static void
+static void
 draw_cross_hairs (int16_t x, int16_t y)
 {
     uint8_t line[3*ISST_CONTEXT_W];
@@ -197,7 +197,7 @@ draw_cross_hairs (int16_t x, int16_t y)
 }
 
 
-    static void
+static void
 isst_local_work_frame()
 {
     bu_exit(-1, "Not yet");
@@ -209,7 +209,7 @@ isst_local_worker (gpointer moocow) {
 }
 
 /* send out a work request to the network */
-    static void
+static void
 isst_net_work_frame()
 {
     uint32_t size;
@@ -304,7 +304,7 @@ isst_net_work_frame()
     tienet_send (isst.socket, message, ind);
 }
 
-    static gpointer
+static gpointer
 isst_net_worker (gpointer moocow)
 {
     struct sockaddr_in my_addr, srv_addr;
@@ -510,7 +510,7 @@ isst_net_worker (gpointer moocow)
 }
 
 
-    static void
+static void
 destroy (GtkWidget *widget, gpointer data)
 {
     isst_free ();
@@ -520,7 +520,7 @@ destroy (GtkWidget *widget, gpointer data)
 
 }
 
-    static int
+static int
 attach_master(struct bu_vls *hostname)
 {
     GError *error = NULL;
@@ -541,7 +541,7 @@ attach_master(struct bu_vls *hostname)
     return 0;
 }
 
-    static void
+static void
 validate_user_callback (GtkWidget *widget, gpointer ptr)
 {
     GtkWidget **wlist;
@@ -594,7 +594,7 @@ validate_user_callback (GtkWidget *widget, gpointer ptr)
 }
 
 
-    static void
+static void
 menuitem_connect_callback ()
 {
     GtkWidget **wlist;
@@ -664,7 +664,7 @@ menuitem_connect_callback ()
 }
 
 
-    static void
+static void
 menuitem_disconnect_callback ()
 {
     uint8_t op;
@@ -679,7 +679,7 @@ menuitem_disconnect_callback ()
 }
 
 
-    static void
+static void
 menuitem_exit_callback ()
 {
     uint8_t op;
@@ -694,7 +694,7 @@ menuitem_exit_callback ()
 }
 
 
-    static void
+static void
 isst_update_gui ()
 {
     gtk_spin_button_set_value (GTK_SPIN_BUTTON (isst_grid_spin), isst.camera_grid);
@@ -724,7 +724,7 @@ VIEW(left,  1, +,  90, 0);
 VIEW(back,  0, -, 180, 0);
 VIEW(right, 1, -, 270, 0);
 
-    static void
+static void
 view_hit_point_callback (GtkWidget *widget, gpointer ptr)
 {
     GtkWidget **wlist;
@@ -754,7 +754,7 @@ view_hit_point_callback (GtkWidget *widget, gpointer ptr)
     free (wlist);
 }
 
-    static void
+static void
 menuitem_view_hit_point_callback ()
 {
     GtkWidget **wlist;
@@ -835,7 +835,7 @@ menuitem_view_hit_point_callback ()
 }
 
 
-    static void
+static void
 save_screenshot_callback (GtkWidget *widget, gpointer ptr)
 {
     const gchar *selected_filename;
@@ -955,7 +955,7 @@ save_screenshot_callback (GtkWidget *widget, gpointer ptr)
 }
 
 
-    static void
+static void
 menuitem_misc_screenshot_callback ()
 {
     GtkWidget *file_selector;
@@ -1045,7 +1045,7 @@ static void load_frame_attribute()
     tienet_send (isst.socket, &isst.wid, 2);
 }
 
-    static void
+static void
 load_g_project_callback (GtkWidget *widget, gpointer ptr)
 {
     uint8_t op;
@@ -1076,7 +1076,8 @@ load_g_project_callback (GtkWidget *widget, gpointer ptr)
     isst.work_frame ();
 }
 
-    static void
+#if 0
+static void
 load_mysql_project_callback (GtkWidget *widget, gpointer ptr)
 {
     GtkWidget **wlist;
@@ -1158,15 +1159,17 @@ load_mysql_project_callback (GtkWidget *widget, gpointer ptr)
 
     free (wlist);
 }
+#endif
 
-    static void
+static void
 menuitem_load_g_callback ()
 {
     /* make a dialog box */
     load_g_project_callback(NULL, 0);
 }
 
-    static void
+#if 0
+static void
 menuitem_load_mysql_project_callback ()
 {
     GtkCellRenderer *renderer;
@@ -1248,9 +1251,9 @@ menuitem_load_mysql_project_callback ()
 
     gtk_widget_show_all (window);
 }
+#endif
 
-
-    static void
+static void
 load_analysis_callback (GtkWidget *widget, gpointer ptr)
 {
     GtkWidget **wlist;
@@ -1336,7 +1339,7 @@ load_analysis_callback (GtkWidget *widget, gpointer ptr)
 }
 
 
-    static void
+static void
 delete_analysis_callback (GtkWidget *widget, gpointer ptr)
 {
     GtkWidget **wlist;
@@ -1383,7 +1386,7 @@ delete_analysis_callback (GtkWidget *widget, gpointer ptr)
 }
 
 
-    static void
+static void
 menuitem_load_analysis_callback ()
 {
     GtkCellRenderer *renderer;
@@ -1487,7 +1490,7 @@ menuitem_load_analysis_callback ()
 }
 
 
-    static void
+static void
 menuitem_about_callback ()
 {
     char message[128];
@@ -1497,7 +1500,7 @@ menuitem_about_callback ()
 }
 
 
-    static void
+static void
 update_view_callback (GtkWidget *widget, gpointer ptr)
 {
     GtkWidget **wlist = (GtkWidget **)ptr;
@@ -1523,7 +1526,7 @@ update_view_callback (GtkWidget *widget, gpointer ptr)
 }
 
 
-    static void
+static void
 update_cellx_callback (GtkWidget *widget, gpointer ptr)
 {
     int16_t x, y;
@@ -1536,7 +1539,7 @@ update_cellx_callback (GtkWidget *widget, gpointer ptr)
 }
 
 
-    static void
+static void
 update_celly_callback (GtkWidget *widget, gpointer ptr)
 {
     int16_t x, y;
@@ -1549,7 +1552,7 @@ update_celly_callback (GtkWidget *widget, gpointer ptr)
 }
 
 
-    static void
+static void
 apply_delta_callback (GtkWidget *widget, gpointer ptr)
 {
     int16_t cellx, celly, deltax, deltay;
@@ -1576,7 +1579,7 @@ apply_delta_callback (GtkWidget *widget, gpointer ptr)
 }
 
 
-    static void
+static void
 save_shotline_callback (GtkWidget *widget, gpointer ptr)
 {
     char query[256];
@@ -1611,7 +1614,7 @@ save_shotline_callback (GtkWidget *widget, gpointer ptr)
 
 static void prbuf(int i, unsigned char *buf) { while(i--) printf("%02X ", *buf++); }
 
-    static void
+static void
 component_select_callback (GtkWidget *widget, gpointer ptr)
 {
     GtkWidget *component_entry;
@@ -1652,7 +1655,7 @@ component_select_callback (GtkWidget *widget, gpointer ptr)
 }
 
 
-    static void
+static void
 component_deselect_all_callback (GtkWidget *widget, gpointer ptr)
 {
     uint32_t size, num;
@@ -1683,7 +1686,7 @@ component_deselect_all_callback (GtkWidget *widget, gpointer ptr)
 }
 
 
-    static void
+static void
 flos_use_current_position_callback (GtkWidget *widget, gpointer ptr)
 {
     gtk_spin_button_set_value (GTK_SPIN_BUTTON (isst_flos_posx_spin), isst.camera_pos.v[0]);
@@ -1692,7 +1695,7 @@ flos_use_current_position_callback (GtkWidget *widget, gpointer ptr)
 }
 
 
-    static void
+static void
 fire_shotline_callback (GtkWidget *widget, gpointer ptr)
 {
     uint32_t size;
@@ -1742,7 +1745,7 @@ fire_shotline_callback (GtkWidget *widget, gpointer ptr)
 
 #if 1
 /* Create a new backing pixmap of the appropriate size */
-    static gboolean
+static gboolean
 context_configure_event( GtkWidget *widget, GdkEventConfigure *event )
 {
     return TRUE;
@@ -1750,7 +1753,7 @@ context_configure_event( GtkWidget *widget, GdkEventConfigure *event )
 #endif
 
 
-    static void
+static void
 update_camera_widgets ()
 {
     gtk_spin_button_set_value (GTK_SPIN_BUTTON (isst_posx_spin), isst.camera_pos.v[0]);
@@ -1762,7 +1765,7 @@ update_camera_widgets ()
 }
 
 
-    static gboolean
+static gboolean
 context_expose_event (GtkWidget *widget, GdkEventExpose *event)
 {
     gdk_draw_rgb_image (widget->window, widget->style->fg_gc[GTK_STATE_NORMAL],
@@ -1777,7 +1780,7 @@ context_expose_event (GtkWidget *widget, GdkEventExpose *event)
 }
 
 
-    static gboolean
+static gboolean
 context_button_event (GtkWidget *widget, GdkEventButton *event)
 {
     /* Do nothing if a project has not yet been loaded */
@@ -1794,7 +1797,7 @@ context_button_event (GtkWidget *widget, GdkEventButton *event)
 }
 
 
-    static gboolean
+static gboolean
 context_scroll_event (GtkWidget *widget, GdkEventScroll *event)
 {
     if (event->direction == GDK_SCROLL_UP)
@@ -1807,7 +1810,7 @@ context_scroll_event (GtkWidget *widget, GdkEventScroll *event)
 }
 
 
-    static gboolean
+static gboolean
 context_motion_event (GtkWidget *widget, GdkEventMotion *event)
 {
     int16_t dx;
@@ -1921,9 +1924,11 @@ context_motion_event (GtkWidget *widget, GdkEventMotion *event)
 
 static GtkActionEntry entries[] = {
     { "ISSTMenu",		NULL,			"_ISST" },
+#if 0
     { "Connect",		GTK_STOCK_CONNECT,	"_Connect",		"<control>C",	"Connect",		menuitem_connect_callback },
     { "Disconnect",		GTK_STOCK_DISCONNECT,	"_Discconect",		"<control>D",	"Disconnect",		menuitem_disconnect_callback },
     { "Load MySQL Project",	GTK_STOCK_OPEN,		"_Load MySQL Project",	"<control>L",	"Load MySQL Project",	menuitem_load_mysql_project_callback },
+#endif
     { "Load G",		GTK_STOCK_OPEN,		"Load _G",		"<control>G",	"Load G",		menuitem_load_g_callback },
     { "Load Data",		GTK_STOCK_OPEN,		"Load _Data",		"<control>A",	"Load Data",		menuitem_load_analysis_callback },
     { "Quit",		GTK_STOCK_QUIT,		"_Quit",		"<control>Q",	"Quit",			menuitem_exit_callback },
@@ -1953,9 +1958,11 @@ static const char *ui_description =
 "<ui>"
 "	<menubar name='MainMenu'>"
 "		<menu action='ISSTMenu'>"
+#if 0
 "			<menuitem action='Connect'/>"
 "			<menuitem action='Disconnect'/>"
 "			<menuitem action='Load MySQL Project'/>"
+#endif
 "			<menuitem action='Load G'/>"
 "			<menuitem action='Load Data'/>"
 "			<menuitem action='Quit'/>"
@@ -1989,7 +1996,7 @@ static const char *ui_description =
 
 
 /* Returns a menubar widget made from the above menu */
-    static GtkWidget*
+static GtkWidget*
 build_menubar (GtkWidget *window)
 {
     /* Create menu bar */
@@ -2020,7 +2027,7 @@ build_menubar (GtkWidget *window)
 }
 
 
-    void
+void
 isst_gui ()
 {
     GtkWidget *main_vbox;
@@ -2443,7 +2450,7 @@ isst_gui ()
 }
 
 
-    void
+void
 isst_setup ()
 {
     mysql_init(&isst.mysql_db);
@@ -2487,12 +2494,12 @@ isst_setup ()
     isst.update_idle = 1;
 }
 
-    void
+void
 isst_free ()
 {
 }
 
-    void
+void
 isst_init ()
 {
     isst_setup ();
