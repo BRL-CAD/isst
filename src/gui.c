@@ -124,10 +124,12 @@ isst_project_widgets ()
 
 #define SWIDG(s,m) gtk_widget_set_sensitive (gtk_ui_manager_get_widget (isst_ui_manager, s), m);
     /* Widgets to display when connected */
+#if 0
     SWIDG("/MainMenu/ISSTMenu/Connect", !mode);
     SWIDG("/MainMenu/ISSTMenu/Disconnect",mode);
     SWIDG("/MainMenu/ISSTMenu/Load MySQL Project",mode);
     SWIDG("/MainMenu/ISSTMenu/Load Data",mode);
+#endif
     SWIDG("/MainMenu/ModeMenu",mode);
     SWIDG("/MainMenu/ViewMenu",mode);
     SWIDG("/MainMenu/MiscMenu",mode);
