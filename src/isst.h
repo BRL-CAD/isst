@@ -112,7 +112,6 @@ typedef struct isst_s
     uint8_t notebook_index[ISST_MODES];
 
     void (*work_frame)(void);
-    gpointer (*worker)(gpointer trash);
 } isst_t;
 
 extern uint8_t isst_flags;

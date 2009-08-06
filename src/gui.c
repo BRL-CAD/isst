@@ -205,11 +205,6 @@ isst_local_work_frame()
     bu_exit(-1, "Not yet");
 }
 
-static gpointer
-isst_local_worker (gpointer moocow) {
-    bu_exit(-1, "Not yet");
-}
-
 /* send out a work request to the network */
 static void
 isst_net_work_frame()
@@ -529,13 +524,11 @@ attach_master(struct bu_vls *hostname)
 
     /* Initiate networking */
     if(strlen(bu_vls_addr(&isst.master)) == 0 || strcmp(bu_vls_addr(&isst.master), "local") == 0) {
-	isst.worker = isst_local_worker;
 	isst.work_frame = isst_local_work_frame;
     } else {
 	isst.work_frame = isst_net_work_frame;
-	isst.worker = isst_net_worker;
+	g_thread_create (isst_net_worker, 0, FALSE, &error);
     }
-    g_thread_create (isst.worker, 0, FALSE, &error);
 
     isst.connected = 1;
     isst_project_widgets ();
