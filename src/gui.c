@@ -190,29 +190,16 @@ draw_cross_hairs (int16_t x, int16_t y)
 #endif
 }
 
+static struct render_camera_s camera;
+static struct tie_s tie;
+static struct camera_tile_s tile;
+
 static void
 isst_local_work_frame()
 {
     static int oldmode = -1;
-    static struct render_camera_s camera;
-    static struct tie_s tie;
-    static struct camera_tile_s tile;
 
     if( oldmode != isst.mode ) {
-	if(oldmode == -1) {	/* first run. */
-	    render_camera_init(&camera, bu_avail_cpus());
-	    camera.w = ISST_CONTEXT_W;
-	    camera.h = ISST_CONTEXT_H;
-	    tile.orig_x = 0;
-	    tile.orig_y = 0;
-	    tile.size_x = ISST_CONTEXT_W;
-	    tile.size_y = ISST_CONTEXT_H;
-	    tile.format = RENDER_CAMERA_BIT_DEPTH_24;
-
-	    /* init/load/prep the tie engine */
-	    load_g(&tie, "/tmp/moss.g", "all.g");
-	}
-
 	switch(isst.mode) {
 	    case ISST_MODE_SHADED:
 	    case ISST_MODE_SHOTLINE:
@@ -247,6 +234,8 @@ isst_local_work_frame()
     camera.pos  = isst.camera_pos;
     camera.focus= isst.camera_foc;
 
+    render_camera_prep (&camera);
+
     /* pump tie_work and display the result. */
     render_camera_render(&camera, &tie, &tile, &isst.buffer_image);
 
@@ -254,8 +243,7 @@ isst_local_work_frame()
     gdk_draw_rgb_image (isst_context->window, isst_context->style->fg_gc[GTK_STATE_NORMAL],
 	    0, 0, ISST_CONTEXT_W, ISST_CONTEXT_H, GDK_RGB_DITHER_NONE,
 	    isst.buffer_image.data, ISST_CONTEXT_W * 3);
-
-    bu_exit(-1, "Not yet");
+    return;
 }
 
 /* send out a work request to the network */
@@ -576,7 +564,7 @@ attach_master(struct bu_vls *hostname)
     GError *error = NULL;
 
     /* Initiate networking */
-    if(strlen(bu_vls_addr(&isst.master)) == 0 || strcmp(bu_vls_addr(&isst.master), "local") == 0) {
+    if(strlen(bu_vls_addr(&isst.master)) == 0 || strncmp(bu_vls_addr(&isst.master), "local", 5) == 0) {
 	isst.work_frame = isst_local_work_frame;
     } else {
 	isst.work_frame = isst_net_work_frame;
@@ -964,25 +952,55 @@ load_g_project_callback (GtkWidget *widget, gpointer ptr)
 
     attach_master(&isst.master);
 
-    /*
-       op = ADRT_NETOP_REQWID;
-       tienet_send (isst.socket, &op, 1);
-       tienet_recv (isst.socket, &isst.wid, 2);
-       */
+    if(isst.work_frame = isst_local_work_frame) {
+	    TIE_3 max;
+	    GTK_WIDGET_UNSET_FLAGS (isst_container, GTK_NO_SHOW_ALL);
+	    gtk_widget_show_all (isst_window);
+	    render_camera_init(&camera, bu_avail_cpus());
+	    camera.w = ISST_CONTEXT_W;
+	    camera.h = ISST_CONTEXT_H;
+	    tile.orig_x = 0;
+	    tile.orig_y = 0;
+	    tile.size_x = ISST_CONTEXT_W;
+	    tile.size_y = ISST_CONTEXT_H;
+	    tile.format = RENDER_CAMERA_BIT_DEPTH_24;
 
-    op = ADRT_NETOP_LOAD;
-    tienet_send (isst.socket, &op, 1);
+	    /* init/load/prep the tie engine */
+	    load_g(&tie, "/tmp/ktank.g", "engine");
 
-    size = sizeof(op) + sizeof(isst.wid) + 1 + strlen("*/tmp/moss.g:all.g");
+	    VMOVE(isst.geom_min.v, tie.min.v);
+	    VMOVE(isst.geom_max.v, tie.max.v);
+	    printf("min/max %f %f %f / %f %f %f\n", V3ARGS(tie.min.v), V3ARGS(tie.max.v));
+	    VADD2(isst.geom_center.v,  isst.geom_min.v,  isst.geom_max.v);
+	    VSCALE(isst.geom_center.v,  isst.geom_center.v,  0.5);
 
-    /* send size */
-    tienet_send (isst.socket, &size, 4);
+	    max.v[0] = fabs (isst.geom_min.v[0]) > fabs (isst.geom_max.v[0]) ? fabs (isst.geom_min.v[0]) : fabs (isst.geom_min.v[0]);
+	    max.v[1] = fabs (isst.geom_min.v[1]) > fabs (isst.geom_max.v[1]) ? fabs (isst.geom_min.v[1]) : fabs (isst.geom_min.v[1]);
+	    max.v[2] = fabs (isst.geom_min.v[2]) > fabs (isst.geom_max.v[2]) ? fabs (isst.geom_min.v[2]) : fabs (isst.geom_min.v[2]);
 
-    snprintf(buf, BUFSIZ, "%c  %c/tmp/moss.g:all.g", ADRT_WORK_INIT, ADRT_LOAD_FORMAT_G);
-    *(uint16_t *)(buf+1) = isst.wid;
+	    isst.geom_radius = sqrt (max.v[0]*max.v[0] + max.v[1]*max.v[1] + max.v[2]*max.v[2]);
+    } else {
+	/*
+	   op = ADRT_NETOP_REQWID;
+	   tienet_send (isst.socket, &op, 1);
+	   tienet_recv (isst.socket, &isst.wid, 2);
+	   */
 
-    tienet_send (isst.socket, buf, size);
-    load_frame_attribute();
+	op = ADRT_NETOP_LOAD;
+	tienet_send (isst.socket, &op, 1);
+
+	size = sizeof(op) + sizeof(isst.wid) + 1 + strlen("*/tmp/ktank.g:tank");
+
+	/* send size */
+	tienet_send (isst.socket, &size, 4);
+
+	snprintf(buf, BUFSIZ, "%c  %c/tmp/ktank.g:tank", ADRT_WORK_INIT, ADRT_LOAD_FORMAT_G);
+	*(uint16_t *)(buf+1) = isst.wid;
+
+	tienet_send (isst.socket, buf, size);
+	load_frame_attribute();
+    }
+
     isst.work_frame ();
 }
 
