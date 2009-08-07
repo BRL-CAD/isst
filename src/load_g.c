@@ -36,6 +36,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <pthread.h>
+
 #include "bu.h"
 
 #include "gcv.h"
