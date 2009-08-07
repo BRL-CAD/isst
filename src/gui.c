@@ -1058,7 +1058,7 @@ load_g_project_callback (GtkWidget *widget, gpointer ptr)
     op = ADRT_NETOP_LOAD;
     tienet_send (isst.socket, &op, 1);
 
-    size = sizeof(op) + sizeof(isst.wid) + 1 + strlen("/tmp/moss.g:all.g");
+    size = sizeof(op) + sizeof(isst.wid) + 1 + strlen("*/tmp/moss.g:all.g");
 
     /* send size */
     tienet_send (isst.socket, &size, 4);
