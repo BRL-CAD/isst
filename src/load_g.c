@@ -127,7 +127,8 @@ nmg_to_adrt_internal(struct nmgregion *r, struct db_full_path *pathp, int region
 		    NMG_CK_VERTEX(v);
 
 		    /* convert mm to m */
-		    VSCALE((*buf[vert_count]).v, v->vg_p->coord, 1/1000);
+		    VSCALE((*buf[vert_count]).v, v->vg_p->coord, 1.0/1000.0);
+		    vert_count++;
 		}
 		if (vert_count > 3)
 		{
@@ -222,6 +223,8 @@ load_g (tie_t *tie, char *db, char *region)
     nmg_km(the_model);
     rt_vlist_cleanup();
     db_close(dbip);
+
+    tie_prep(cur_tie);
 
     return 0;
 }
