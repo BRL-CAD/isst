@@ -31,8 +31,6 @@
 #include <signal.h>
 #include <unistd.h>
 
-#include <mysql.h>
-
 #include "tie/tie.h"
 #include "tie/adrt.h"
 #include "isst.h"

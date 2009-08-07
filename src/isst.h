@@ -69,9 +69,6 @@ typedef struct isst_s
     int32_t pid;
     uint16_t wid;
     uint8_t connected;
-    /*
-    MYSQL mysql_db;
-    */
     int socket;
     uint16_t endian;
     uint8_t mode;

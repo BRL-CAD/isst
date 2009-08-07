@@ -40,9 +40,6 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <unistd.h>
-/*
-#include <mysql.h>
-*/
 #include <pango/pango.h>
 #if ISST_USE_COMPRESSION
 #include <zlib.h>
@@ -54,7 +51,6 @@
 #include "tie/adrt.h"
 #include "tie/adrt_struct.h"
 
-#include "sql.h"
 #include "isst.h"
 
 #define TABLE_BORDER_WIDTH	0
@@ -126,12 +122,6 @@ isst_project_widgets ()
 
 #define SWIDG(s,m) gtk_widget_set_sensitive (gtk_ui_manager_get_widget (isst_ui_manager, s), m);
     /* Widgets to display when connected */
-#if 0
-    SWIDG("/MainMenu/ISSTMenu/Connect", !mode);
-    SWIDG("/MainMenu/ISSTMenu/Disconnect",mode);
-    SWIDG("/MainMenu/ISSTMenu/Load MySQL Project",mode);
-    SWIDG("/MainMenu/ISSTMenu/Load Data",mode);
-#endif
     SWIDG("/MainMenu/ModeMenu",mode);
     SWIDG("/MainMenu/ViewMenu",mode);
     SWIDG("/MainMenu/MiscMenu",mode);
@@ -599,145 +589,6 @@ attach_master(struct bu_vls *hostname)
     return 0;
 }
 
-static void
-validate_user_callback (GtkWidget *widget, gpointer ptr)
-{
-    GtkWidget **wlist;
-    GtkWidget *status;
-    GtkWidget *username;
-    GtkWidget *password;
-    GtkWidget *master;
-    GtkWidget *database;
-
-    wlist = (GtkWidget **)ptr;
-    status = wlist[2];
-    username = wlist[4];
-    password = wlist[6];
-    database = wlist[8];
-    master = wlist[10];
-
-    strcpy(isst.username, GTK_ENTRY (username)->text);
-    strcpy(isst.password, GTK_ENTRY (password)->text);
-    bu_vls_strcpy(&isst.database, GTK_ENTRY (database)->text);
-    bu_vls_strcpy(&isst.master, GTK_ENTRY (master)->text);
-
-    bu_vls_trimspace(&isst.database);
-    bu_vls_trimspace(&isst.master);
-
-    if(sql_connect( bu_vls_addr(&isst.database) ) == 0) {
-	gtk_label_set_text(GTK_LABEL (status), "Status: MySQL Connection Failed");
-	return;
-    }
-
-    /* Authenticate user */
-#ifdef HAX
-    isst.uid = 1;
-#else
-    isst.uid = sql_verify( GTK_ENTRY (username)->text, GTK_ENTRY (password)->text);
-#endif
-
-    if(isst.uid > 0) {
-	attach_master(&isst.master);
-
-	/* Destroy the window along with all of its widgets */
-	gtk_widget_destroy (wlist[0]);
-	free (wlist);
-
-	/* For now this will prevent GDK from throwing WINDOW != NULL spam */
-	//		sleep(1);
-    } else {
-	gtk_label_set_text(GTK_LABEL (status), "Status: Authentication Failed");
-	return;
-    }
-}
-
-
-static void
-menuitem_connect_callback ()
-{
-    GtkWidget **wlist;
-
-    if (isst.connected)
-    {
-	generic_dialog ("Disconnect before establishing a new connection.");
-	return;
-    }
-
-    /* allocate some ptr memory for widget to pass to callback */
-    wlist = (GtkWidget **)malloc(12 * sizeof (GtkWidget *));
-
-    wlist[0] = gtk_window_new (GTK_WINDOW_TOPLEVEL);
-    gtk_window_set_modal (GTK_WINDOW (wlist[0]), TRUE);
-    gtk_window_set_position (GTK_WINDOW (wlist[0]), GTK_WIN_POS_MOUSE);
-    gtk_window_set_title (GTK_WINDOW (wlist[0]), "Connect to Server");
-    gtk_window_set_resizable (GTK_WINDOW (wlist[0]), FALSE);
-
-    /* Create a table for the window */
-    wlist[1] = gtk_table_new (6, 2, FALSE);
-    gtk_container_set_border_width (GTK_CONTAINER (wlist[1]), TABLE_BORDER_WIDTH);
-    gtk_container_add (GTK_CONTAINER (wlist[0]), wlist[1]);
-
-    wlist[2] = gtk_label_new ("Status: Disconnected");
-    gtk_table_attach_defaults (GTK_TABLE (wlist[1]), wlist[2], 0, 2, 0, 1);
-
-    /* Username */
-    wlist[3] = gtk_label_new ("Username:");
-    gtk_table_attach_defaults (GTK_TABLE (wlist[1]), wlist[3], 0, 1, 1, 2);
-    wlist[4] = gtk_entry_new ();
-    gtk_table_attach_defaults (GTK_TABLE (wlist[1]), wlist[4], 1, 2, 1, 2);
-
-    /* Password */
-    wlist[5] = gtk_label_new ("Password:");
-    gtk_table_attach_defaults (GTK_TABLE (wlist[1]), wlist[5], 0, 1, 2, 3);
-    wlist[6] = gtk_entry_new ();
-    gtk_entry_set_visibility (GTK_ENTRY (wlist[6]), FALSE);
-    gtk_table_attach_defaults (GTK_TABLE (wlist[1]), wlist[6], 1, 2, 2, 3);
-
-    /* Database */
-    wlist[7] = gtk_label_new ("DB Hostname:");
-    gtk_table_attach_defaults (GTK_TABLE (wlist[1]), wlist[7], 0, 1, 3, 4);
-    wlist[8] = gtk_entry_new ();
-    gtk_table_attach_defaults (GTK_TABLE (wlist[1]), wlist[8], 1, 2, 3, 4);
-
-    /* Master */
-    wlist[9] = gtk_label_new ("Master Hostname:");
-    gtk_table_attach_defaults (GTK_TABLE (wlist[1]), wlist[9], 0, 1, 4, 5);
-    wlist[10] = gtk_entry_new ();
-    gtk_table_attach_defaults (GTK_TABLE (wlist[1]), wlist[10], 1, 2, 4, 5);
-
-    if(getenv("ADRT_DB"))
-	gtk_entry_set_text(GTK_ENTRY(wlist[8]), getenv("ADRT_DB"));
-    else if(getenv("ADRT_DATABASE"))
-	gtk_entry_set_text(GTK_ENTRY(wlist[8]), getenv("ADRT_DATABASE"));
-    if(getenv("ADRT_MASTER"))
-	gtk_entry_set_text(GTK_ENTRY(wlist[10]), getenv("ADRT_MASTER"));
-
-    /* Connect Button */
-    wlist[11] = gtk_button_new_with_label ("Connect");
-    gtk_table_attach_defaults (GTK_TABLE (wlist[1]), wlist[11], 1, 2, 5, 6);
-
-    g_signal_connect (G_OBJECT (wlist[11]), "clicked", G_CALLBACK (validate_user_callback), wlist);
-
-    gtk_widget_show_all (wlist[0]);
-}
-
-
-static void
-menuitem_disconnect_callback ()
-{
-    uint8_t op;
-
-    isst.connected = 0;
-    isst_project_widgets ();
-
-    /*
-    sql_close();
-    */
-
-    op = ADRT_NETOP_SHUTDOWN;
-    tienet_send (isst.socket, &op, 1);
-}
-
 
 static void
 menuitem_exit_callback ()
@@ -745,9 +596,6 @@ menuitem_exit_callback ()
     uint8_t op;
 
     isst.connected = 0;
-    /*
-    sql_close();
-    */
 
     op = ADRT_NETOP_SHUTDOWN;
     tienet_send (isst.socket, &op, 1);
@@ -1138,423 +986,11 @@ load_g_project_callback (GtkWidget *widget, gpointer ptr)
     isst.work_frame ();
 }
 
-#if 0
-static void
-load_mysql_project_callback (GtkWidget *widget, gpointer ptr)
-{
-    GtkWidget **wlist;
-    GtkWidget *window;
-    GtkWidget *treeview;
-    GtkTreeIter iter;
-    GtkTreeModel *model = NULL;
-    GtkTreeSelection *selection = NULL;
-    GValue value = { 0, };
-    uint8_t op, l, fmt;
-    uint32_t size;
-
-    if (isst.pid >= 0)
-    {
-	generic_dialog ("Opening another project is not supported yet.");
-	return;
-    }
-
-    wlist = (GtkWidget **) ptr;
-    window = wlist[0];
-    treeview = wlist[1];
-    model = gtk_tree_view_get_model (GTK_TREE_VIEW (treeview));
-    selection = gtk_tree_view_get_selection (GTK_TREE_VIEW (treeview));
-
-    if (gtk_tree_selection_get_selected (selection, NULL, &iter))
-    {
-
-	/* get the project id from the table */
-	gtk_tree_model_get_value (model, &iter, 2, &value);
-	isst.pid = g_value_get_uint (&value);
-
-	g_value_unset (&value);
-    }
-
-    /*
-     * Request a WID. It is used to associate all communications with
-     * the master to a loaded project.
-     */
-    op = ADRT_NETOP_REQWID;
-    tienet_send (isst.socket, &op, 1);
-    tienet_recv (isst.socket, &isst.wid, 2);
-
-    op = ADRT_NETOP_LOAD;
-    tienet_send (isst.socket, &op, 1);
-
-    /* op + wid + strlen + string + pid + length_of_host */
-    size = sizeof(op) + sizeof(isst.wid) + sizeof(fmt) + bu_vls_strlen (&isst.database) + sizeof(l) + sizeof(isst.pid) + 1;
-
-    /* send size */
-    tienet_send (isst.socket, &size, 4);
-
-    op = ADRT_WORK_INIT;
-    tienet_send (isst.socket, &op, 1);
-
-    /* send workspace id */
-    tienet_send (isst.socket, &isst.wid, 2);
-
-    /* end of libtienet handled data */
-    /* start of slave handled data */
-
-    fmt = ADRT_LOAD_FORMAT_MYSQL_F;	/* magic for mysql */
-    tienet_send (isst.socket, &fmt, sizeof(fmt));
-
-    /* send project id */
-    tienet_send (isst.socket, &isst.pid, sizeof(isst.pid));
-
-    /* send database hostname */
-    l = bu_vls_strlen (&isst.database) + 1;
-    tienet_send (isst.socket, &l, sizeof(l));
-    tienet_send (isst.socket, bu_vls_addr(&isst.database), l);
-
-    load_frame_attribute();
-
-    /* Destroy the window along with all of its widgets */
-    gtk_widget_destroy (window);
-
-    /* Request a shaded frame */
-    isst.work_frame ();
-
-    free (wlist);
-}
-#endif
-
 static void
 menuitem_load_g_callback ()
 {
     /* make a dialog box */
     load_g_project_callback(NULL, 0);
-}
-
-#if 0
-static void
-menuitem_load_mysql_project_callback ()
-{
-    GtkCellRenderer *renderer;
-    GtkTreeViewColumn *column;
-    GtkWidget **wlist;
-    GtkWidget *window;
-    GtkWidget *sw;
-    GtkWidget *vbox;
-    GtkWidget *button;
-    GtkTreeModel *table;
-    GtkListStore *store;
-    GtkWidget *treeview;
-    GtkTreeIter iter;
-    uint32_t i;
-    struct proj_s *proj;
-
-    if (!isst.connected)
-	return;
-
-    window = gtk_window_new (GTK_WINDOW_TOPLEVEL);
-    gtk_window_set_modal (GTK_WINDOW (window), TRUE);
-    gtk_widget_set_size_request (GTK_WIDGET (window), 320, 200);
-    gtk_window_set_position (GTK_WINDOW (window), GTK_WIN_POS_MOUSE);
-    gtk_window_set_title (GTK_WINDOW (window), "Load Project");
-    gtk_window_set_resizable (GTK_WINDOW (window), FALSE);
-
-    vbox = gtk_vbox_new (FALSE, 8);
-    gtk_container_add (GTK_CONTAINER (window), vbox);
-
-    sw = gtk_scrolled_window_new (NULL, NULL);
-    gtk_scrolled_window_set_shadow_type (GTK_SCROLLED_WINDOW (sw), GTK_SHADOW_ETCHED_IN);
-    gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (sw), GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
-    gtk_box_pack_start (GTK_BOX (vbox), sw, TRUE, TRUE, 0);
-
-    /* create the project table */
-    store = gtk_list_store_new (3, G_TYPE_UINT, G_TYPE_STRING, G_TYPE_UINT);
-
-    /* query for projects */
-    proj = sql_projects(isst.uid);
-    while(proj) {
-	struct proj_s *next = proj->next;
-
-	gtk_list_store_append (store, &iter);
-	gtk_list_store_set (store, &iter, 0, proj->id, 1, proj->name, 2, proj->id, -1);
-	free(proj);
-	proj = next;
-    }
-
-    table = GTK_TREE_MODEL (store);
-
-    /* create tree view */
-    treeview = gtk_tree_view_new_with_model (table);
-    gtk_tree_view_set_rules_hint (GTK_TREE_VIEW (treeview), TRUE);
-    gtk_tree_view_set_search_column (GTK_TREE_VIEW (treeview), 0);
-
-    g_object_unref (table);
-    gtk_container_add (GTK_CONTAINER (sw), treeview);
-
-    /* add columns to the table */
-    renderer = gtk_cell_renderer_text_new ();
-    column = gtk_tree_view_column_new_with_attributes ("#", renderer, "text", 0, NULL);
-    gtk_tree_view_column_set_sort_column_id (column, 0);
-    gtk_tree_view_append_column (GTK_TREE_VIEW (treeview), column);
-
-    renderer = gtk_cell_renderer_text_new ();
-    column = gtk_tree_view_column_new_with_attributes ("Project Name", renderer, "text", 1, NULL);
-    gtk_tree_view_column_set_sort_column_id (column, 1);
-    gtk_tree_view_append_column (GTK_TREE_VIEW (treeview), column);
-
-    button = gtk_button_new_with_label ("load project");
-
-    /* allocate some ptr memory for widget to pass to callback */
-    wlist = (GtkWidget **)malloc(2 * sizeof (GtkWidget *));
-    wlist[0] = window;
-    wlist[1] = treeview;
-
-    g_signal_connect (G_OBJECT (button), "clicked", G_CALLBACK (load_mysql_project_callback), wlist);
-    gtk_box_pack_end (GTK_BOX (vbox), button, FALSE, FALSE, 0);
-
-    gtk_widget_show_all (window);
-}
-#endif
-
-static void
-load_analysis_callback (GtkWidget *widget, gpointer ptr)
-{
-#if 0
-    GtkWidget **wlist;
-    GtkWidget *window;
-    GtkWidget *treeview;
-    GtkTreeIter iter;
-    GtkTreeModel *model = NULL;
-    GtkTreeSelection *selection = NULL;
-    GValue value = { 0, };
-    uint32_t aid = 0;
-    char name[32];
-    char type[32];
-    MYSQL_RES *res;
-    MYSQL_ROW row;
-    char query[256];
-
-    wlist = (GtkWidget **)ptr;
-    window = wlist[0];
-    treeview = wlist[1];
-    model = gtk_tree_view_get_model (GTK_TREE_VIEW (treeview));
-    selection = gtk_tree_view_get_selection (GTK_TREE_VIEW (treeview));
-
-    if (gtk_tree_selection_get_selected (selection, NULL, &iter))
-    {
-	/* get the analysis type from the table */
-	gtk_tree_model_get_value (model, &iter, 1, &value);
-	strcpy (type, g_value_get_string (&value));
-	g_value_unset (&value);
-
-	/* get the analysis name from the table */
-	gtk_tree_model_get_value (model, &iter, 2, &value);
-	strcpy (name, g_value_get_string (&value));
-	g_value_unset (&value);
-
-	/* get the analysis id from the table */
-	gtk_tree_model_get_value (model, &iter, 3, &value);
-	aid = g_value_get_uint (&value);
-	g_value_unset (&value);
-    }
-
-    if (!strcmp (type, "shotline"))
-    {
-	sprintf (query, "select grid,posx,posy,posz,azim,elev,cellx,celly from shotline where aid=%d", aid);
-	mysql_query (&isst.mysql_db, query);
-	res = mysql_use_result (&isst.mysql_db);
-	row = mysql_fetch_row (res);
-
-	/* Set the camera */
-	isst.camera_grid = atof (row[0]);
-	isst.camera_pos.v[0] = atof (row[1]);
-	isst.camera_pos.v[1] = atof (row[2]);
-	isst.camera_pos.v[2] = atof (row[3]);
-	isst.camera_az = atof (row[4]);
-	isst.camera_el = atof (row[5]);
-	isst.mouse_x = (uint16_t) (ISST_CONTEXT_W * atof (row[6]));
-	isst.mouse_y = (uint16_t) (ISST_CONTEXT_H * atof (row[7]));
-
-	/* Update the GUI */
-	isst_update_gui ();
-	gtk_entry_set_text (GTK_ENTRY (isst_name_entry), name);
-
-	/* Clear the shotline table and in-hit */
-	gtk_list_store_clear (isst_shotline_store);
-	gtk_entry_set_text (GTK_ENTRY (isst_inhit_entry), "");
-
-	/* Switch to shotline mode */
-	isst.mode = ISST_MODE_SHOTLINE;
-	isst.camera_type = RENDER_CAMERA_ORTHOGRAPHIC;
-	gtk_notebook_set_current_page (GTK_NOTEBOOK (isst_notebook), isst.notebook_index[isst.mode]);
-
-	AZEL_TO_FOC ();
-
-	isst.work_frame ();
-
-	mysql_free_result (res);
-    }
-
-    /* Destroy the window along with all of its widgets */
-    gtk_widget_destroy (window);
-
-    /* Request a shaded frame */
-    isst.work_frame ();
-#endif
-}
-
-
-static void
-delete_analysis_callback (GtkWidget *widget, gpointer ptr)
-{
-#if 0
-    GtkWidget **wlist;
-    GtkWidget *window;
-    GtkWidget *treeview;
-    GtkTreeIter iter;
-    GtkTreeModel *model = NULL;
-    GtkTreeSelection *selection = NULL;
-    GValue value = { 0, };
-    uint32_t aid = 0;
-    char type[32];
-    char query[256];
-
-    wlist = (GtkWidget **)ptr;
-    window = wlist[0];
-    treeview = wlist[1];
-    model = gtk_tree_view_get_model (GTK_TREE_VIEW (treeview));
-    selection = gtk_tree_view_get_selection (GTK_TREE_VIEW (treeview));
-
-    if (gtk_tree_selection_get_selected (selection, NULL, &iter))
-    {
-	/* get the analysis type from the table */
-	gtk_tree_model_get_value (model, &iter, 1, &value);
-	strcpy (type, g_value_get_string (&value));
-	g_value_unset (&value);
-
-	/* get the analysis id from the table */
-	gtk_tree_model_get_value (model, &iter, 3, &value);
-	aid = g_value_get_uint (&value);
-	g_value_unset (&value);
-    }
-
-    if (!strcmp (type, "shotline"))
-    {
-	sprintf (query, "delete from analysis where aid=%d", aid);
-	mysql_query (&isst.mysql_db, query);
-
-	sprintf (query, "delete from shotline where aid=%d", aid);
-	mysql_query (&isst.mysql_db, query);
-    }
-
-    /* Destroy the window along with all of its widgets */
-    gtk_widget_destroy (window);
-#endif
-}
-
-
-static void
-menuitem_load_analysis_callback ()
-{
-#if 0
-    GtkCellRenderer *renderer;
-    GtkTreeViewColumn *column;
-    GtkWidget **wlist;
-    GtkWidget *window;
-    GtkWidget *sw;
-    GtkWidget *vbox;
-    GtkWidget *hbox;
-    GtkWidget *load_button;
-    GtkWidget *delete_button;
-    GtkTreeModel *table;
-    GtkListStore *store;
-    GtkWidget *treeview;
-    GtkTreeIter iter;
-    uint32_t i;
-    MYSQL_RES *res;
-    MYSQL_ROW row;
-    char query[256];
-
-
-    if (!isst.connected)
-	return;
-
-    window = gtk_window_new (GTK_WINDOW_TOPLEVEL);
-    gtk_window_set_modal (GTK_WINDOW (window), TRUE);
-    gtk_widget_set_size_request (GTK_WIDGET (window), 320, 200);
-    gtk_window_set_position (GTK_WINDOW (window), GTK_WIN_POS_MOUSE);
-    gtk_window_set_title (GTK_WINDOW (window), "Load Data");
-    gtk_window_set_resizable (GTK_WINDOW (window), FALSE);
-
-    vbox = gtk_vbox_new (FALSE, 8);
-    gtk_container_add (GTK_CONTAINER (window), vbox);
-
-    sw = gtk_scrolled_window_new (NULL, NULL);
-    gtk_scrolled_window_set_shadow_type (GTK_SCROLLED_WINDOW (sw), GTK_SHADOW_ETCHED_IN);
-    gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (sw), GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
-    gtk_box_pack_start (GTK_BOX (vbox), sw, TRUE, TRUE, 0);
-
-    /* create the project table */
-    store = gtk_list_store_new (4, G_TYPE_UINT, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_UINT);
-
-    /* query for projects */
-    sprintf (query, "select aid,type,name from analysis where pid='%d'", isst.pid);
-    mysql_query (&isst.mysql_db, query);
-
-    res = mysql_use_result (&isst.mysql_db);
-
-    for (i = 0; (row = mysql_fetch_row (res)); i++)
-    {
-	gtk_list_store_append (store, &iter);
-	gtk_list_store_set (store, &iter, 0, i, 1, row[1], 2, row[2], 3, atoi (row[0]), -1);
-    }
-
-    mysql_free_result (res);
-
-    table = GTK_TREE_MODEL (store);
-
-    /* create tree view */
-    treeview = gtk_tree_view_new_with_model (table);
-    gtk_tree_view_set_rules_hint (GTK_TREE_VIEW (treeview), TRUE);
-    gtk_tree_view_set_search_column (GTK_TREE_VIEW (treeview), 0);
-
-    g_object_unref (table);
-    gtk_container_add (GTK_CONTAINER (sw), treeview);
-
-    /* add columns to the table */
-    renderer = gtk_cell_renderer_text_new ();
-    column = gtk_tree_view_column_new_with_attributes ("#", renderer, "text", 0, NULL);
-    gtk_tree_view_column_set_sort_column_id (column, 0);
-    gtk_tree_view_append_column (GTK_TREE_VIEW (treeview), column);
-
-    renderer = gtk_cell_renderer_text_new ();
-    column = gtk_tree_view_column_new_with_attributes ("Type", renderer, "text", 1, NULL);
-    gtk_tree_view_column_set_sort_column_id (column, 1);
-    gtk_tree_view_append_column (GTK_TREE_VIEW (treeview), column);
-
-    renderer = gtk_cell_renderer_text_new ();
-    column = gtk_tree_view_column_new_with_attributes ("Name", renderer, "text", 2, NULL);
-    gtk_tree_view_column_set_sort_column_id (column, 2);
-    gtk_tree_view_append_column (GTK_TREE_VIEW (treeview), column);
-
-    hbox = gtk_hbox_new (TRUE, 0);
-    gtk_box_pack_end (GTK_BOX (vbox), hbox, FALSE, FALSE, 0);
-
-    load_button = gtk_button_new_with_label ("Load");
-    delete_button = gtk_button_new_with_label ("Delete");
-
-    /* allocate some ptr memory for widget to pass to callback */
-    wlist = (GtkWidget **) malloc (2 * sizeof (GtkWidget *));
-    wlist[0] = window;
-    wlist[1] = treeview;
-
-    g_signal_connect (G_OBJECT (load_button), "clicked", G_CALLBACK (load_analysis_callback), wlist);
-    g_signal_connect (G_OBJECT (delete_button), "clicked", G_CALLBACK (delete_analysis_callback), wlist);
-
-    gtk_box_pack_start (GTK_BOX (hbox), load_button, TRUE, TRUE, 0);
-    gtk_box_pack_end (GTK_BOX (hbox), delete_button, TRUE, TRUE, 0);
-
-    gtk_widget_show_all (window);
-#endif
 }
 
 
@@ -1646,41 +1082,6 @@ apply_delta_callback (GtkWidget *widget, gpointer ptr)
     isst.mouse_y = celly;
 }
 
-
-static void
-save_shotline_callback (GtkWidget *widget, gpointer ptr)
-{
-#if 0
-    char query[256];
-    uint32_t aid;
-
-    /* Create a new analysis */
-    if (strlen(gtk_entry_get_text (GTK_ENTRY (isst_name_entry))) == 0)
-    {
-	generic_dialog ("Must provide name for shotline.");
-	return;
-    }
-
-    sprintf (query, "insert into analysis values('', '%d', 'shotline', '%s')", isst.pid, gtk_entry_get_text (GTK_ENTRY (isst_name_entry)));
-    mysql_query (&isst.mysql_db, query);
-
-    /* Get the analysis id and insert supplimental shotline data */
-    aid = mysql_insert_id (&isst.mysql_db);
-
-    sprintf (query, "insert into shotline values('%d', '%f', '%f', '%f', '%f', '%f', '%f', '%f', '%f')",
-	    aid,
-	    isst.camera_grid,
-	    isst.camera_pos.v[0],
-	    isst.camera_pos.v[1],
-	    isst.camera_pos.v[2],
-	    isst.camera_az,
-	    isst.camera_el,
-	    (tfloat) gtk_spin_button_get_value (GTK_SPIN_BUTTON (isst_cellx_spin)) / (tfloat) ISST_CONTEXT_W,
-	    (tfloat) gtk_spin_button_get_value (GTK_SPIN_BUTTON (isst_celly_spin)) / (tfloat) ISST_CONTEXT_H);
-
-    mysql_query (&isst.mysql_db, query);
-#endif
-}
 
 static void prbuf(int i, unsigned char *buf) { while(i--) printf("%02X ", *buf++); }
 
@@ -1994,13 +1395,7 @@ context_motion_event (GtkWidget *widget, GdkEventMotion *event)
 
 static GtkActionEntry entries[] = {
     { "ISSTMenu",		NULL,			"_ISST" },
-#if 0
-    { "Connect",		GTK_STOCK_CONNECT,	"_Connect",		"<control>C",	"Connect",		menuitem_connect_callback },
-    { "Disconnect",		GTK_STOCK_DISCONNECT,	"_Discconect",		"<control>D",	"Disconnect",		menuitem_disconnect_callback },
-    { "Load MySQL Project",	GTK_STOCK_OPEN,		"_Load MySQL Project",	"<control>L",	"Load MySQL Project",	menuitem_load_mysql_project_callback },
-#endif
     { "Load G",		GTK_STOCK_OPEN,		"Load _G",		"<control>G",	"Load G",		menuitem_load_g_callback },
-    { "Load Data",		GTK_STOCK_OPEN,		"Load _Data",		"<control>A",	"Load Data",		menuitem_load_analysis_callback },
     { "Quit",		GTK_STOCK_QUIT,		"_Quit",		"<control>Q",	"Quit",			menuitem_exit_callback },
     { "ModeMenu",		NULL,			"_Mode" },
     { "Shaded View",	NULL,			"Shaded View",		NULL,		"Shaded View",		menuitem_view_shaded_callback },
@@ -2028,13 +1423,7 @@ static const char *ui_description =
 "<ui>"
 "	<menubar name='MainMenu'>"
 "		<menu action='ISSTMenu'>"
-#if 0
-"			<menuitem action='Connect'/>"
-"			<menuitem action='Disconnect'/>"
-"			<menuitem action='Load MySQL Project'/>"
-#endif
 "			<menuitem action='Load G'/>"
-"			<menuitem action='Load Data'/>"
 "			<menuitem action='Quit'/>"
 "		</menu>"
 "		<menu action='ModeMenu'>"
@@ -2490,11 +1879,6 @@ isst_gui ()
 	isst_name_entry = gtk_entry_new ();
 	gtk_table_attach_defaults (GTK_TABLE (table), isst_name_entry, 1, 4, 2, 3);
 
-	/* Save Button */
-	save_button = gtk_button_new_with_label ("Save Shotline");
-	gtk_table_attach_defaults (GTK_TABLE (table), save_button, 4, 5, 2, 3);
-	g_signal_connect (G_OBJECT (save_button), "clicked", G_CALLBACK (save_shotline_callback), NULL);
-
 	/* In-Hit Info */
 	label = gtk_label_new ("In-Hit");
 	gtk_table_attach_defaults (GTK_TABLE (table), label, 0, 1, 3, 4);
@@ -2523,10 +1907,6 @@ isst_gui ()
 void
 isst_setup ()
 {
-    /*
-    mysql_init(&isst.mysql_db);
-    */
-
     /* User Settings */
     isst.uid = -1;
     isst.pid = -1;
