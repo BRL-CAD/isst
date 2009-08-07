@@ -69,7 +69,9 @@ typedef struct isst_s
     int32_t pid;
     uint16_t wid;
     uint8_t connected;
+    /*
     MYSQL mysql_db;
+    */
     int socket;
     uint16_t endian;
     uint8_t mode;
@@ -122,6 +124,8 @@ void isst_init (void);
 void isst_azel_to_foc ();
 void isst_free();
 void isst_azel_to_foc();
+
+int load_g(tie_t *, char *db, char *top);
 
 #endif
 

@@ -65,22 +65,22 @@ fi
 AC_SUBST(PANGO_CFLAGS)
 AC_SUBST(PANGO_LIBS)
 
-##
-## MYSQL
-##
-AC_PATH_PROG(MYSQL_CONFIG, mysql_config, , $PATH)
-AC_MSG_CHECKING(for MYSQL)
-if test "x$MYSQL_CONFIG" = "x" ; then
-	AC_MSG_RESULT(no)
-	AC_MSG_ERROR([MYSQL is required])
-else
-	MYSQL_CFLAGS="`$MYSQL_CONFIG --cflags`"
-	MYSQL_LIBS="`$MYSQL_CONFIG --libs`"
-	MYSQL_VER="`$MYSQL_CONFIG --version`"
-	AC_MSG_RESULT(yes (version $MYSQL_VER))
-fi
-AC_SUBST(MYSQL_CFLAGS)
-AC_SUBST(MYSQL_LIBS)
+### ##
+### ## MYSQL
+### ##
+### AC_PATH_PROG(MYSQL_CONFIG, mysql_config, , $PATH)
+### AC_MSG_CHECKING(for MYSQL)
+### if test "x$MYSQL_CONFIG" = "x" ; then
+### 	AC_MSG_RESULT(no)
+### 	AC_MSG_ERROR([MYSQL is required])
+### else
+### 	MYSQL_CFLAGS="`$MYSQL_CONFIG --cflags`"
+### 	MYSQL_LIBS="`$MYSQL_CONFIG --libs`"
+### 	MYSQL_VER="`$MYSQL_CONFIG --version`"
+### 	AC_MSG_RESULT(yes (version $MYSQL_VER))
+### fi
+### AC_SUBST(MYSQL_CFLAGS)
+### AC_SUBST(MYSQL_LIBS)
 
 
 AC_MSG_CHECKING(whether to compile for debugging)
@@ -115,11 +115,9 @@ AC_SUBST(ADRT_LIBS)
 AM_CONDITIONAL(HAVE_ADRT, [test "x$with_adrtpfx" != "xno"])
 
 TIE_CFLAGS="-I/usr/brlcad/include -I/usr/brlcad/include/brlcad -DTIE_PRECISION=0 -DHAX=1"
-TIE_LIBS="-L/usr/brlcad/lib -ltie"
-RENDER_LIBS="-L/usr/brlcad/lib -lrender"
+TIE_LIBS="-L/usr/brlcad/lib -ltie -lrender -lrt -lgcv"
 AC_SUBST(TIE_CFLAGS)
 AC_SUBST(TIE_LIBS)
-AC_SUBST(RENDER_LIBS)
 
 AC_CONFIG_FILES([Makefile src/Makefile utils/Makefile])
 AC_OUTPUT

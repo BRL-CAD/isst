@@ -45,6 +45,7 @@
 
 static int sql_connected = 0;
 
+#if 0
     int
 sql_connect(char *host)
 {
@@ -120,6 +121,8 @@ sql_projects(int uid)
     mysql_free_result (res);
     return ret;
 }
+
+#endif
 
 /*
  * Local Variables:

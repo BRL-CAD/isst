@@ -40,7 +40,9 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <unistd.h>
+/*
 #include <mysql.h>
+*/
 #include <pango/pango.h>
 #if ISST_USE_COMPRESSION
 #include <zlib.h>
@@ -198,10 +200,71 @@ draw_cross_hairs (int16_t x, int16_t y)
 #endif
 }
 
-
 static void
 isst_local_work_frame()
 {
+    static int oldmode = -1;
+    static struct render_camera_s camera;
+    static struct tie_s tie;
+    static struct camera_tile_s tile;
+
+    if( oldmode != isst.mode ) {
+	if(oldmode == -1) {	/* first run. */
+	    render_camera_init(&camera, bu_avail_cpus());
+	    camera.w = ISST_CONTEXT_W;
+	    camera.h = ISST_CONTEXT_H;
+	    tile.orig_x = 0;
+	    tile.orig_y = 0;
+	    tile.size_x = ISST_CONTEXT_W;
+	    tile.size_y = ISST_CONTEXT_H;
+	    tile.format = RENDER_CAMERA_BIT_DEPTH_24;
+
+	    /* init/load/prep the tie engine */
+	    load_g(&tie, "/tmp/moss.g", "all.g");
+	}
+
+	switch(isst.mode) {
+	    case ISST_MODE_SHADED:
+	    case ISST_MODE_SHOTLINE:
+		render_phong_init(&camera.render);
+		break;
+	    case ISST_MODE_NORMAL:
+		render_normal_init(&camera.render);
+		break;
+	    case ISST_MODE_DEPTH:
+		render_depth_init(&camera.render);
+		break;
+		/*
+	    case ISST_MODE_COMPONENT:
+		render_component_init(&camera.render);
+		break;
+	    case ISST_MODE_CUT:
+		render_cut_init(&camera.render);
+		break;
+	    case ISST_MODE_FLOS:
+		render_flos_init(&camera.render);
+		break;
+		*/
+	    default:
+		bu_log("Bad mode: %d\n", isst.mode);
+		bu_bomb("Kapow\n");
+	}
+	oldmode = isst.mode;
+    }
+
+    camera.type = isst.camera_type;
+    camera.fov  = isst.camera_fov;
+    camera.pos  = isst.camera_pos;
+    camera.focus= isst.camera_foc;
+
+    /* pump tie_work and display the result. */
+    render_camera_render(&camera, &tie, &tile, &isst.buffer_image);
+
+    /* shove results into the gdk canvas */
+    gdk_draw_rgb_image (isst_context->window, isst_context->style->fg_gc[GTK_STATE_NORMAL],
+	    0, 0, ISST_CONTEXT_W, ISST_CONTEXT_H, GDK_RGB_DITHER_NONE,
+	    isst.buffer_image.data, ISST_CONTEXT_W * 3);
+
     bu_exit(-1, "Not yet");
 }
 
@@ -667,7 +730,9 @@ menuitem_disconnect_callback ()
     isst.connected = 0;
     isst_project_widgets ();
 
+    /*
     sql_close();
+    */
 
     op = ADRT_NETOP_SHUTDOWN;
     tienet_send (isst.socket, &op, 1);
@@ -680,7 +745,9 @@ menuitem_exit_callback ()
     uint8_t op;
 
     isst.connected = 0;
+    /*
     sql_close();
+    */
 
     op = ADRT_NETOP_SHUTDOWN;
     tienet_send (isst.socket, &op, 1);
@@ -1251,6 +1318,7 @@ menuitem_load_mysql_project_callback ()
 static void
 load_analysis_callback (GtkWidget *widget, gpointer ptr)
 {
+#if 0
     GtkWidget **wlist;
     GtkWidget *window;
     GtkWidget *treeview;
@@ -1331,12 +1399,14 @@ load_analysis_callback (GtkWidget *widget, gpointer ptr)
 
     /* Request a shaded frame */
     isst.work_frame ();
+#endif
 }
 
 
 static void
 delete_analysis_callback (GtkWidget *widget, gpointer ptr)
 {
+#if 0
     GtkWidget **wlist;
     GtkWidget *window;
     GtkWidget *treeview;
@@ -1378,12 +1448,14 @@ delete_analysis_callback (GtkWidget *widget, gpointer ptr)
 
     /* Destroy the window along with all of its widgets */
     gtk_widget_destroy (window);
+#endif
 }
 
 
 static void
 menuitem_load_analysis_callback ()
 {
+#if 0
     GtkCellRenderer *renderer;
     GtkTreeViewColumn *column;
     GtkWidget **wlist;
@@ -1482,6 +1554,7 @@ menuitem_load_analysis_callback ()
     gtk_box_pack_end (GTK_BOX (hbox), delete_button, TRUE, TRUE, 0);
 
     gtk_widget_show_all (window);
+#endif
 }
 
 
@@ -1577,6 +1650,7 @@ apply_delta_callback (GtkWidget *widget, gpointer ptr)
 static void
 save_shotline_callback (GtkWidget *widget, gpointer ptr)
 {
+#if 0
     char query[256];
     uint32_t aid;
 
@@ -1605,6 +1679,7 @@ save_shotline_callback (GtkWidget *widget, gpointer ptr)
 	    (tfloat) gtk_spin_button_get_value (GTK_SPIN_BUTTON (isst_celly_spin)) / (tfloat) ISST_CONTEXT_H);
 
     mysql_query (&isst.mysql_db, query);
+#endif
 }
 
 static void prbuf(int i, unsigned char *buf) { while(i--) printf("%02X ", *buf++); }
@@ -2448,7 +2523,9 @@ isst_gui ()
 void
 isst_setup ()
 {
+    /*
     mysql_init(&isst.mysql_db);
+    */
 
     /* User Settings */
     isst.uid = -1;
