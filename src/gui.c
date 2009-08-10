@@ -212,7 +212,7 @@ isst_local_worker (gpointer moocow) {
 
 	/* spinlock. Fix this. */
 	if(!isst.update_avail)
-	    sleep(0);
+	    usleep(100);
 
 	isst.update_avail = 0;
 	isst.update_idle = 0;
@@ -257,7 +257,22 @@ isst_local_worker (gpointer moocow) {
 	render_camera_prep (&camera);
 
 	/* pump tie_work and display the result. */
-	render_camera_render(&camera, tie, &tile, &isst.buffer_image);
+	{
+	    static int meh = 0;
+	    static double mehd = 0;
+	    struct timeval ts[2];
+	    gettimeofday(ts, NULL);
+	    render_camera_render(&camera, tie, &tile, &isst.buffer_image);
+	    gettimeofday(ts+1, NULL);
+	    ++meh;
+	    mehd += (((double)ts[1].tv_sec+(double)ts[1].tv_usec/(double)1e6) - ((double)ts[0].tv_sec+(double)ts[0].tv_usec/(double)1e6));
+
+	    if(mehd>1.0/3.0) {
+		printf("   \r%.2lf FPS", (double)meh / mehd); fflush(stdout);
+		meh = 0;
+		mehd = 0;
+	    }
+	}
 
 	/* shove results into the gdk canvas */
 	gdk_threads_enter ();
@@ -639,6 +654,7 @@ static void menuitem_view_##n##_callback () { \
 	isst.camera_el = e; \
 	isst_update_gui (); \
 	AZEL_TO_FOC (); \
+	isst.update_avail = 1; \
 	isst.work_frame (); \
 }
 
@@ -979,11 +995,16 @@ load_g_project_callback (GtkWidget *widget, gpointer ptr)
 
     if(isst.work_frame == isst_local_work_frame) {
 	    TIE_3 max;
+	    struct timeval ts[2];
+
 	    GTK_WIDGET_UNSET_FLAGS (isst_container, GTK_NO_SHOW_ALL);
 	    gtk_widget_show_all (isst_window);
 	    
 	    /* init/load/prep the tie engine */
-	    load_g(tie, "/tmp/ktank.g", "tank");
+	    gettimeofday(ts, NULL);
+	    load_g(tie, "/tmp/t62.g", "compartment");
+	    gettimeofday(ts+1, NULL);
+	    printf("Time to load: %.2f seconds\n", (((double)ts[1].tv_sec+(double)ts[1].tv_usec/(double)1e6) - ((double)ts[0].tv_sec+(double)ts[0].tv_usec/(double)1e6)));
 
 	    VMOVE(isst.geom_min.v, tie->min.v);
 	    VMOVE(isst.geom_max.v, tie->max.v);
