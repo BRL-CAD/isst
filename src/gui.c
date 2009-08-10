@@ -135,10 +135,7 @@ draw_cross_hairs (int16_t x, int16_t y)
     int i;
     uint8_t *p;
 
-#define LOCKIT 0
-#if LOCKIT
     gdk_threads_enter ();
-#endif
 
     /* Update cellx and celly spin buttons */
     gtk_spin_button_set_value (GTK_SPIN_BUTTON (isst_cellx_spin), x);
@@ -185,67 +182,91 @@ draw_cross_hairs (int16_t x, int16_t y)
     gdk_draw_rgb_image (isst_context->window, isst_context->style->fg_gc[GTK_STATE_NORMAL], 
 	    x, 0, 1, ISST_CONTEXT_H, GDK_RGB_DITHER_NONE, line, 3);
 
-#if LOCKIT
     gdk_threads_leave ();
-#endif
 }
 
-static struct render_camera_s camera;
-static struct tie_s tie;
-static struct camera_tile_s tile;
-
 static void
-isst_local_work_frame()
-{
-    static int oldmode = -1;
+isst_local_work_frame() {
+    isst.update_avail = 1;
+    return;
+}
 
-    if( oldmode != isst.mode ) {
-	switch(isst.mode) {
-	    case ISST_MODE_SHADED:
-	    case ISST_MODE_SHOTLINE:
-		render_phong_init(&camera.render);
-		break;
-	    case ISST_MODE_NORMAL:
-		render_normal_init(&camera.render);
-		break;
-	    case ISST_MODE_DEPTH:
-		render_depth_init(&camera.render);
-		break;
-		/*
-	    case ISST_MODE_COMPONENT:
-		render_component_init(&camera.render);
-		break;
-	    case ISST_MODE_CUT:
-		render_cut_init(&camera.render);
-		break;
-	    case ISST_MODE_FLOS:
-		render_flos_init(&camera.render);
-		break;
-		*/
-	    default:
-		bu_log("Bad mode: %d\n", isst.mode);
-		bu_bomb("Kapow\n");
+struct tie_s *tie;
+
+static gpointer
+isst_local_worker (gpointer moocow) {
+    int oldmode = -1;
+    struct render_camera_s camera;
+    struct camera_tile_s tile;
+
+    render_camera_init(&camera, bu_avail_cpus());
+    camera.w = ISST_CONTEXT_W;
+    camera.h = ISST_CONTEXT_H;
+    tile.orig_x = 0;
+    tile.orig_y = 0;
+    tile.size_x = ISST_CONTEXT_W;
+    tile.size_y = ISST_CONTEXT_H;
+    tile.format = RENDER_CAMERA_BIT_DEPTH_24;
+
+    while(1) {
+
+	/* spinlock. Fix this. */
+	if(!isst.update_avail)
+	    sleep(0);
+
+	isst.update_avail = 0;
+	isst.update_idle = 0;
+
+	if( oldmode != isst.mode ) {
+	    switch(isst.mode) {
+		case ISST_MODE_SHADED:
+		case ISST_MODE_SHOTLINE:
+		    render_phong_init(&camera.render);
+		    break;
+		case ISST_MODE_NORMAL:
+		    render_normal_init(&camera.render);
+		    break;
+		case ISST_MODE_DEPTH:
+		    render_depth_init(&camera.render);
+		    break;
+		    /*
+		       case ISST_MODE_COMPONENT:
+		       render_component_init(&camera.render);
+		       break;
+		       case ISST_MODE_CUT:
+		       render_cut_init(&camera.render);
+		       break;
+		       case ISST_MODE_FLOS:
+		       render_flos_init(&camera.render);
+		       break;
+		       */
+		default:
+		    bu_log("Bad mode: %d\n", isst.mode);
+		    bu_bomb("Kapow\n");
+	    }
+	    oldmode = isst.mode;
 	}
-	oldmode = isst.mode;
+
+	camera.type = isst.camera_type;
+	camera.fov  = isst.camera_fov;
+	camera.pos  = isst.camera_pos;
+	camera.focus= isst.camera_foc;
+
+	isst.buffer_image.ind = 0;
+
+	render_camera_prep (&camera);
+
+	/* pump tie_work and display the result. */
+	render_camera_render(&camera, tie, &tile, &isst.buffer_image);
+
+	/* shove results into the gdk canvas */
+	gdk_threads_enter ();
+	gdk_draw_rgb_image (isst_context->window, isst_context->style->fg_gc[GTK_STATE_NORMAL],
+		0, 0, ISST_CONTEXT_W, ISST_CONTEXT_H, GDK_RGB_DITHER_NONE,
+		isst.buffer_image.data, ISST_CONTEXT_W * 3);
+	gdk_threads_leave ();
+	isst.update_idle = 1;
     }
-
-    camera.type = isst.camera_type;
-    camera.fov  = isst.camera_fov;
-    camera.pos  = isst.camera_pos;
-    camera.focus= isst.camera_foc;
-
-    isst.buffer_image.ind = 0;
-
-    render_camera_prep (&camera);
-
-    /* pump tie_work and display the result. */
-    render_camera_render(&camera, &tie, &tile, &isst.buffer_image);
-
-    /* shove results into the gdk canvas */
-    gdk_draw_rgb_image (isst_context->window, isst_context->style->fg_gc[GTK_STATE_NORMAL],
-	    0, 0, ISST_CONTEXT_W, ISST_CONTEXT_H, GDK_RGB_DITHER_NONE,
-	    isst.buffer_image.data, ISST_CONTEXT_W * 3);
-    isst.update_idle = 1;
     return;
 }
 
@@ -569,6 +590,7 @@ attach_master(struct bu_vls *hostname)
     /* Initiate networking */
     if(strlen(bu_vls_addr(&isst.master)) == 0 || strncmp(bu_vls_addr(&isst.master), "local", 5) == 0) {
 	isst.work_frame = isst_local_work_frame;
+	g_thread_create (isst_local_worker, 0, FALSE, &error);
     } else {
 	isst.work_frame = isst_net_work_frame;
 	g_thread_create (isst_net_worker, 0, FALSE, &error);
@@ -955,25 +977,16 @@ load_g_project_callback (GtkWidget *widget, gpointer ptr)
 
     attach_master(&isst.master);
 
-    if(isst.work_frame = isst_local_work_frame) {
+    if(isst.work_frame == isst_local_work_frame) {
 	    TIE_3 max;
 	    GTK_WIDGET_UNSET_FLAGS (isst_container, GTK_NO_SHOW_ALL);
 	    gtk_widget_show_all (isst_window);
-	    render_camera_init(&camera, bu_avail_cpus());
-	    camera.w = ISST_CONTEXT_W;
-	    camera.h = ISST_CONTEXT_H;
-	    tile.orig_x = 0;
-	    tile.orig_y = 0;
-	    tile.size_x = ISST_CONTEXT_W;
-	    tile.size_y = ISST_CONTEXT_H;
-	    tile.format = RENDER_CAMERA_BIT_DEPTH_24;
-
+	    
 	    /* init/load/prep the tie engine */
-	    load_g(&tie, "/tmp/ktank.g", "tank");
+	    load_g(tie, "/tmp/ktank.g", "tank");
 
-	    VMOVE(isst.geom_min.v, tie.min.v);
-	    VMOVE(isst.geom_max.v, tie.max.v);
-	    printf("min/max %f %f %f / %f %f %f\n", V3ARGS(tie.min.v), V3ARGS(tie.max.v));
+	    VMOVE(isst.geom_min.v, tie->min.v);
+	    VMOVE(isst.geom_max.v, tie->max.v);
 	    VADD2(isst.geom_center.v,  isst.geom_min.v,  isst.geom_max.v);
 	    VSCALE(isst.geom_center.v,  isst.geom_center.v,  0.5);
 
@@ -983,6 +996,8 @@ load_g_project_callback (GtkWidget *widget, gpointer ptr)
 
 	    isst.geom_radius = sqrt (max.v[0]*max.v[0] + max.v[1]*max.v[1] + max.v[2]*max.v[2]);
 	    isst.pid = 0;
+
+	    isst.update_avail = 1;
     } else {
 	/*
 	   op = ADRT_NETOP_REQWID;
@@ -1966,6 +1981,8 @@ isst_setup ()
     pthread_mutex_init (&isst.update_mut, 0);
     isst.update_avail = 0;
     isst.update_idle = 1;
+
+    tie = (struct tie_s *)bu_malloc(sizeof(struct tie_s), "tie");
 }
 
 void
