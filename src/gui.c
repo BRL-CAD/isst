@@ -234,6 +234,8 @@ isst_local_work_frame()
     camera.pos  = isst.camera_pos;
     camera.focus= isst.camera_foc;
 
+    isst.buffer_image.ind = 0;
+
     render_camera_prep (&camera);
 
     /* pump tie_work and display the result. */
@@ -243,6 +245,7 @@ isst_local_work_frame()
     gdk_draw_rgb_image (isst_context->window, isst_context->style->fg_gc[GTK_STATE_NORMAL],
 	    0, 0, ISST_CONTEXT_W, ISST_CONTEXT_H, GDK_RGB_DITHER_NONE,
 	    isst.buffer_image.data, ISST_CONTEXT_W * 3);
+    isst.update_idle = 1;
     return;
 }
 
@@ -966,7 +969,7 @@ load_g_project_callback (GtkWidget *widget, gpointer ptr)
 	    tile.format = RENDER_CAMERA_BIT_DEPTH_24;
 
 	    /* init/load/prep the tie engine */
-	    load_g(&tie, "/tmp/ktank.g", "engine");
+	    load_g(&tie, "/tmp/ktank.g", "tank");
 
 	    VMOVE(isst.geom_min.v, tie.min.v);
 	    VMOVE(isst.geom_max.v, tie.max.v);
@@ -979,6 +982,7 @@ load_g_project_callback (GtkWidget *widget, gpointer ptr)
 	    max.v[2] = fabs (isst.geom_min.v[2]) > fabs (isst.geom_max.v[2]) ? fabs (isst.geom_min.v[2]) : fabs (isst.geom_min.v[2]);
 
 	    isst.geom_radius = sqrt (max.v[0]*max.v[0] + max.v[1]*max.v[1] + max.v[2]*max.v[2]);
+	    isst.pid = 0;
     } else {
 	/*
 	   op = ADRT_NETOP_REQWID;
