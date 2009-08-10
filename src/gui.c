@@ -229,10 +229,10 @@ isst_local_worker (gpointer moocow) {
 		case ISST_MODE_DEPTH:
 		    render_depth_init(&camera.render);
 		    break;
+		case ISST_MODE_COMPONENT:
+		    render_component_init(&camera.render);
+		    break;
 		    /*
-		       case ISST_MODE_COMPONENT:
-		       render_component_init(&camera.render);
-		       break;
 		       case ISST_MODE_CUT:
 		       render_cut_init(&camera.render);
 		       break;
@@ -1002,7 +1002,7 @@ load_g_project_callback (GtkWidget *widget, gpointer ptr)
 	    
 	    /* init/load/prep the tie engine */
 	    gettimeofday(ts, NULL);
-	    load_g(tie, "/tmp/t62.g", "compartment");
+	    load_g(tie, "/tmp/ktank.g", "tank");
 	    gettimeofday(ts+1, NULL);
 	    printf("Time to load: %.2f seconds\n", (((double)ts[1].tv_sec+(double)ts[1].tv_usec/(double)1e6) - ((double)ts[0].tv_sec+(double)ts[0].tv_usec/(double)1e6)));
 
@@ -1153,31 +1153,41 @@ component_select_callback (GtkWidget *widget, gpointer ptr)
 
     str = (char *)gtk_entry_get_text (GTK_ENTRY ((GtkWidget *)ptr) );
 
-    c = (uint8_t)(strlen (str) + 1);
+    if(str[0] == 0)	/* no empty strings. */
+	return;
 
-    /* Send request for next frame */
-    op = ADRT_NETOP_WORK;
-    tienet_send (isst.socket, &op, 1);
+    if(isst.work_frame == isst_local_work_frame) {
+	struct adrt_mesh_s *m;
+	for(BU_LIST_FOR(m, adrt_mesh_s, &isst.meshes->l))
+	    /* should this search be case insensitive? regex? */
+	    m->flags |= strnstr(m->name, str, 255) ? ADRT_MESH_SELECT : 0;
+    } else {
+	c = (uint8_t)(strlen (str) + 1);
 
-    /* size */
-    size = 1 + 1 + 4 + 1 + c;
-    tienet_send (isst.socket, &size, 4);
+	/* Send request for next frame */
+	op = ADRT_NETOP_WORK;
+	tienet_send (isst.socket, &op, 1);
 
-    /* slave function */
-    op = ADRT_WORK_SELECT;
-    tienet_send (isst.socket, &op, 1);
+	/* size */
+	size = 1 + 1 + 4 + 1 + c;
+	tienet_send (isst.socket, &size, 4);
 
-    /* reset flag off */
-    op = 0;
-    tienet_send (isst.socket, &op, 1);
+	/* slave function */
+	op = ADRT_WORK_SELECT;
+	tienet_send (isst.socket, &op, 1);
 
-    /* number of strings to select */
-    num = 1;
-    tienet_send (isst.socket, &num, 4);
+	/* reset flag off */
+	op = 0;
+	tienet_send (isst.socket, &op, 1);
 
-    /* string length and string */
-    tienet_send (isst.socket, &c, 1);
-    tienet_send (isst.socket, str, c);
+	/* number of strings to select */
+	num = 1;
+	tienet_send (isst.socket, &num, 4);
+
+	/* string length and string */
+	tienet_send (isst.socket, &c, 1);
+	tienet_send (isst.socket, str, c);
+    }
 
     /* Update the component view */
     isst.work_frame();
@@ -1190,25 +1200,32 @@ component_deselect_all_callback (GtkWidget *widget, gpointer ptr)
     uint32_t size, num;
     uint8_t op;
 
-    /* Send request for next frame */
-    op = ADRT_NETOP_WORK;
-    tienet_send (isst.socket, &op, 1);
 
-    /* size */
-    size = 1 + 1 + 4;
-    tienet_send (isst.socket, &size, 4);
+    if(isst.work_frame == isst_local_work_frame) {
+	struct adrt_mesh_s *m;
+	for(BU_LIST_FOR(m, adrt_mesh_s, &isst.meshes->l))
+	    m->flags = 0;
+    } else {
+	/* Send request for next frame */
+	op = ADRT_NETOP_WORK;
+	tienet_send (isst.socket, &op, 1);
 
-    /* slave function */
-    op = ADRT_WORK_SELECT;
-    tienet_send (isst.socket, &op, 1);
+	/* size */
+	size = 1 + 1 + 4;
+	tienet_send (isst.socket, &size, 4);
 
-    /* reset flag off */
-    op = 1;
-    tienet_send (isst.socket, &op, 1);
+	/* slave function */
+	op = ADRT_WORK_SELECT;
+	tienet_send (isst.socket, &op, 1);
 
-    /* number of strings to select */
-    num = 0;
-    tienet_send (isst.socket, &num, 4);
+	/* reset flag off */
+	op = 1;
+	tienet_send (isst.socket, &op, 1);
+
+	/* number of strings to select */
+	num = 0;
+	tienet_send (isst.socket, &num, 4);
+    }
 
     /* Update the component view */
     isst.work_frame();

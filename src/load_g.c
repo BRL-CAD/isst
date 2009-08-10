@@ -81,7 +81,10 @@ nmg_to_adrt_internal(struct nmgregion *r, struct db_full_path *pathp, int region
     buf[1] = (TIE_3 *)bu_malloc(sizeof(TIE_3) * 3, "triangle buffer");
     buf[2] = (TIE_3 *)bu_malloc(sizeof(TIE_3) * 3, "triangle buffer");
 
-    mesh = (struct adrt_mesh_s *)bu_malloc(sizeof(struct adrt_mesh_s), "adrt mesh");
+    mesh = BU_GETSTRUCT(mesh, adrt_mesh_s);
+
+    BU_LIST_PUSH(&(isst.meshes->l), &(mesh->l));
+
     mesh->texture = NULL;
     mesh->flags = 0;
     mesh->attributes = (struct adrt_mesh_attributes_s *)bu_malloc(sizeof(struct adrt_mesh_attributes_s), "adrt mesh attributes");
@@ -210,6 +213,9 @@ load_g (tie_t *tie, char *db, char *region)
     RT_CK_TESS_TOL(tree_state.ts_ttol);
 
     tie_init(cur_tie, 4096, TIE_KDTREE_FAST);
+
+    BU_GETSTRUCT(isst.meshes, adrt_mesh_s);
+    BU_LIST_INIT(&(isst.meshes->l));
 
     (void) db_walk_tree(dbip, 
 			1,

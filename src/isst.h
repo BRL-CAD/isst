@@ -111,6 +111,8 @@ typedef struct isst_s
     uint8_t notebook_index[ISST_MODES];
 
     void (*work_frame)(void);
+
+    struct adrt_mesh_s *meshes;	/* a bu_list of meshes */
 } isst_t;
 
 extern uint8_t isst_flags;
