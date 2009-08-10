@@ -85,8 +85,9 @@ nmg_to_adrt_internal(struct nmgregion *r, struct db_full_path *pathp, int region
     mesh->texture = NULL;
     mesh->flags = 0;
     mesh->attributes = (struct adrt_mesh_attributes_s *)bu_malloc(sizeof(struct adrt_mesh_attributes_s), "adrt mesh attributes");
+
+    VMOVE(mesh->attributes->color.v, color);
     strncpy(mesh->name, db_path_to_string(pathp), 255);
-    VSETALL( mesh->attributes->color.v, 0.8 );
 
     /* Check triangles */
     for (BU_LIST_FOR (s, shell, &r->s_hd))
