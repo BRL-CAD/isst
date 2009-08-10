@@ -195,9 +195,11 @@ struct tie_s *tie;
 
 static gpointer
 isst_local_worker (gpointer moocow) {
-    int oldmode = -1;
+    int oldmode = -1, meh = 0;
+    double mehd = 0;
     struct render_camera_s camera;
     struct camera_tile_s tile;
+    struct timeval ts[2];
 
     render_camera_init(&camera, bu_avail_cpus());
     camera.w = ISST_CONTEXT_W;
@@ -232,14 +234,19 @@ isst_local_worker (gpointer moocow) {
 		case ISST_MODE_COMPONENT:
 		    render_component_init(&camera.render);
 		    break;
-		    /*
-		       case ISST_MODE_CUT:
-		       render_cut_init(&camera.render);
-		       break;
-		       case ISST_MODE_FLOS:
-		       render_flos_init(&camera.render);
-		       break;
-		       */
+		case ISST_MODE_CUT:
+		    VMOVE(isst.shotline_pos.v, isst.camera_pos.v);
+		    VSUB2(isst.shotline_dir.v, isst.camera_pos.v, isst.camera_foc.v);
+		    printf("%.2f %.2f %.2f -> %.2f %.2f %.2f\n", V3ARGS(isst.shotline_pos.v), V3ARGS(isst.shotline_dir.v));
+		    render_cut_init(&camera.render, isst.shotline_pos, isst.shotline_dir);
+		    break;
+		case ISST_MODE_FLOS: 
+		    {
+			TIE_3 fpos;
+			VSET(fpos.v,  gtk_spin_button_get_value (GTK_SPIN_BUTTON (isst_flos_posx_spin)),  gtk_spin_button_get_value (GTK_SPIN_BUTTON (isst_flos_posy_spin)),  gtk_spin_button_get_value (GTK_SPIN_BUTTON (isst_flos_posz_spin)));
+			render_flos_init(&camera.render, fpos);
+		    }
+		    break;
 		default:
 		    bu_log("Bad mode: %d\n", isst.mode);
 		    bu_bomb("Kapow\n");
@@ -257,21 +264,16 @@ isst_local_worker (gpointer moocow) {
 	render_camera_prep (&camera);
 
 	/* pump tie_work and display the result. */
-	{
-	    static int meh = 0;
-	    static double mehd = 0;
-	    struct timeval ts[2];
-	    gettimeofday(ts, NULL);
-	    render_camera_render(&camera, tie, &tile, &isst.buffer_image);
-	    gettimeofday(ts+1, NULL);
-	    ++meh;
-	    mehd += (((double)ts[1].tv_sec+(double)ts[1].tv_usec/(double)1e6) - ((double)ts[0].tv_sec+(double)ts[0].tv_usec/(double)1e6));
+	gettimeofday(ts, NULL);
+	render_camera_render(&camera, tie, &tile, &isst.buffer_image);
+	gettimeofday(ts+1, NULL);
+	++meh;
+	mehd += (((double)ts[1].tv_sec+(double)ts[1].tv_usec/(double)1e6) - ((double)ts[0].tv_sec+(double)ts[0].tv_usec/(double)1e6));
 
-	    if(mehd>1.0/3.0) {
-		printf("   \r%.2lf FPS", (double)meh / mehd); fflush(stdout);
-		meh = 0;
-		mehd = 0;
-	    }
+	if(mehd>1.0/3.0) {
+	    printf("   \r%.2lf FPS", (double)meh / mehd); fflush(stdout);
+	    meh = 0;
+	    mehd = 0;
 	}
 
 	/* shove results into the gdk canvas */
@@ -1250,21 +1252,6 @@ fire_shotline_callback (GtkWidget *widget, gpointer ptr)
     tie_ray_t ray;
     TIE_3 v1, v2;
 
-    /* Send request for next frame */
-    op = ADRT_NETOP_WORK;
-    tienet_send (isst.socket, &op, 1);
-
-    /* size */
-    size = 1 + 2 + 2 * sizeof (TIE_3);
-    tienet_send (isst.socket, &size, 4);
-
-    /* slave function */
-    op = ADRT_WORK_SHOTLINE;
-    tienet_send (isst.socket, &op, 1);
-
-    /* workspace id */
-    tienet_send (isst.socket, &isst.wid, 2);
-
     /* Calculate Position and Direction of ray for shotline based on Cell coordinates */
     render_camera_init (&camera, 1);
     camera.w = ISST_CONTEXT_W;
@@ -1283,21 +1270,37 @@ fire_shotline_callback (GtkWidget *widget, gpointer ptr)
     VADD2(ray.pos.v,  ray.pos.v,  v1.v);
     VADD2(ray.pos.v,  ray.pos.v,  v2.v);
 
-    /* Send Position and Direction */
-    tienet_send (isst.socket, ray.pos.v, sizeof (TIE_3));
-    tienet_send (isst.socket, ray.dir.v, sizeof (TIE_3));
+    if(isst.work_frame == isst_local_work_frame) {
+	/* do some... stuff... for render_util_shotline_list... */
+    }	else {
+	/* Send request for next frame */
+	op = ADRT_NETOP_WORK;
+	tienet_send (isst.socket, &op, 1);
+
+	/* size */
+	size = 1 + 2 + 2 * sizeof (TIE_3);
+	tienet_send (isst.socket, &size, 4);
+
+	/* slave function */
+	op = ADRT_WORK_SHOTLINE;
+	tienet_send (isst.socket, &op, 1);
+
+	/* workspace id */
+	tienet_send (isst.socket, &isst.wid, 2);
+
+
+	/* Send Position and Direction */
+	tienet_send (isst.socket, ray.pos.v, sizeof (TIE_3));
+	tienet_send (isst.socket, ray.dir.v, sizeof (TIE_3));
+    }
 }
 
-
-#if 1
 /* Create a new backing pixmap of the appropriate size */
 static gboolean
 context_configure_event( GtkWidget *widget, GdkEventConfigure *event )
 {
     return TRUE;
 }
-#endif
-
 
 static void
 update_camera_widgets ()
