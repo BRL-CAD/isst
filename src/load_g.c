@@ -146,7 +146,6 @@ nmg_to_adrt_internal(struct nmgregion *r, struct db_full_path *pathp, int region
 	}
     }
 
-    printf("%s\tpolys: %d\n", mesh->name, region_polys);
     bu_free(buf[0], "vert");
     bu_free(buf[1], "vert");
     bu_free(buf[2], "vert");
