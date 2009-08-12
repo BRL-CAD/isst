@@ -56,6 +56,7 @@
 
 static struct bn_tol tol;		/* calculation tolerance */
 static tie_t *cur_tie;
+static struct db_i *dbip;
 
 /* load the region into the tie image */
 static void
@@ -72,9 +73,6 @@ nmg_to_adrt_internal(struct nmgregion *r, struct db_full_path *pathp, int region
 
     m = r->m_p;
     NMG_CK_MODEL(m);
-
-    /* triangulate model */
-    nmg_triangulate_model(m, &tol);
 
     buf = (TIE_3 **)bu_malloc(sizeof(TIE_3 *) * 3, "triangle buffer buffer");
     buf[0] = (TIE_3 *)bu_malloc(sizeof(TIE_3) * 3, "triangle buffer");
@@ -158,11 +156,53 @@ nmg_to_adrt_internal(struct nmgregion *r, struct db_full_path *pathp, int region
 }
 
 int
-load_g (tie_t *tie, char *db, char *region)
+nmg_to_adrt_regstart(struct db_tree_state *ts, struct db_full_path *path, const struct rt_comb_internal *rci, genptr_t client_data) {
+    /* 
+     * if it's a simple single bot region, just eat the bots and return -1.
+     * Omnomnom. 
+     */
+    struct directory *dir;
+    RT_CHECK_COMB(rci);
+    if(rci->tree == NULL)
+	return -1;
+    RT_CK_TREE(rci->tree);
+    if( rci->tree->tr_op != OP_DB_LEAF ) 
+	return 0;
+    dir = db_lookup(dbip, rci->tree->tr_l.tl_name, 1);
+    if(dir->d_minor_type != ID_BOT)
+	return 0;
+
+    printf("%s is a bot, do magic here.\n", dir->d_namep);
+
+    return 0;
+}
+
+static void
+nmg_to_adrt_gcvwrite(struct nmgregion *r, struct db_full_path *pathp, int region_id, int material_id, float color[3])
+{
+    struct model *m;
+    struct shell *s;
+    int region_polys=0;
+    TIE_3 **buf;
+    struct adrt_mesh_s *mesh;
+
+    NMG_CK_REGION(r);
+    RT_CK_FULL_PATH(pathp);
+
+    m = r->m_p;
+    NMG_CK_MODEL(m);
+
+    /* triangulate model */
+    nmg_triangulate_model(m, &tol);
+
+    nmg_to_adrt_internal(r, pathp, region_id, material_id, color);
+}
+
+int
+load_g (tie_t *tie, const char *db, int argc, const char **argv)
 {
     int c;
     double percent;
-    struct db_i *dbip;
     struct model *the_model;
     struct rt_tess_tol ttol;		/* tesselation tolerance in mm */
     struct db_tree_state tree_state;	/* includes tol & model */
@@ -218,14 +258,14 @@ load_g (tie_t *tie, char *db, char *region)
     BU_LIST_INIT(&(isst.meshes->l));
 
     (void) db_walk_tree(dbip, 
-			1,
-			(const char **)(&region),
+			argc,			/* number of toplevel regions */			
+			argv,			/* region names */
 			1,			/* ncpu */
-			&tree_state,
-			0,			/* take all regions */
-			gcv_region_end,
-			nmg_booltree_leaf_tess,
-			(genptr_t)nmg_to_adrt_internal);
+			&tree_state,		/* initial tree state */
+			nmg_to_adrt_regstart,	/* region start function */
+			gcv_region_end,		/* region end function */
+			nmg_booltree_leaf_tess,	/* leaf func */
+			(genptr_t)nmg_to_adrt_gcvwrite);	/* client data */
 
     /* Release dynamic storage */
     nmg_km(the_model);
