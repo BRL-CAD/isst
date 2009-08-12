@@ -991,6 +991,7 @@ load_g_project_callback (GtkWidget *widget, gpointer ptr)
 {
     uint8_t op;
     char buf[BUFSIZ];
+    const char *file = "/tmp/ktank.g", *argv[] = {"tank",NULL};
     int size, i;
 
     attach_master(&isst.master);
@@ -1004,7 +1005,7 @@ load_g_project_callback (GtkWidget *widget, gpointer ptr)
 	    
 	    /* init/load/prep the tie engine */
 	    gettimeofday(ts, NULL);
-	    load_g(tie, "/tmp/ktank.g", "tank");
+	    load_g(tie, file, 1, argv);
 	    gettimeofday(ts+1, NULL);
 	    printf("Time to load: %.2f seconds\n", (((double)ts[1].tv_sec+(double)ts[1].tv_usec/(double)1e6) - ((double)ts[0].tv_sec+(double)ts[0].tv_usec/(double)1e6)));
 

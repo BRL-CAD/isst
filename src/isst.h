@@ -124,7 +124,7 @@ void isst_azel_to_foc ();
 void isst_free();
 void isst_azel_to_foc();
 
-int load_g(tie_t *, char *db, char *top);
+int load_g(tie_t *, const char *dbfile, int argc, const char **argv);
 
 #endif
 
