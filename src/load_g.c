@@ -57,38 +57,20 @@
 static struct bn_tol tol;		/* calculation tolerance */
 static tie_t *cur_tie;
 static struct db_i *dbip;
+TIE_3 **tribuf;
 
 /* load the region into the tie image */
 static void
-nmg_to_adrt_internal(struct nmgregion *r, struct db_full_path *pathp, int region_id, int material_id, float color[3])
+nmg_to_adrt_internal(struct adrt_mesh_s *mesh, struct nmgregion *r)
 {
     struct model *m;
     struct shell *s;
     int region_polys=0;
-    TIE_3 **buf;
-    struct adrt_mesh_s *mesh;
 
     NMG_CK_REGION(r);
-    RT_CK_FULL_PATH(pathp);
 
     m = r->m_p;
     NMG_CK_MODEL(m);
-
-    buf = (TIE_3 **)bu_malloc(sizeof(TIE_3 *) * 3, "triangle buffer buffer");
-    buf[0] = (TIE_3 *)bu_malloc(sizeof(TIE_3) * 3, "triangle buffer");
-    buf[1] = (TIE_3 *)bu_malloc(sizeof(TIE_3) * 3, "triangle buffer");
-    buf[2] = (TIE_3 *)bu_malloc(sizeof(TIE_3) * 3, "triangle buffer");
-
-    mesh = BU_GETSTRUCT(mesh, adrt_mesh_s);
-
-    BU_LIST_PUSH(&(isst.meshes->l), &(mesh->l));
-
-    mesh->texture = NULL;
-    mesh->flags = 0;
-    mesh->attributes = (struct adrt_mesh_attributes_s *)bu_malloc(sizeof(struct adrt_mesh_attributes_s), "adrt mesh attributes");
-
-    VMOVE(mesh->attributes->color.v, color);
-    strncpy(mesh->name, db_path_to_string(pathp), 255);
 
     /* Check triangles */
     for (BU_LIST_FOR (s, shell, &r->s_hd))
@@ -131,7 +113,7 @@ nmg_to_adrt_internal(struct nmgregion *r, struct db_full_path *pathp, int region
 		    NMG_CK_VERTEX(v);
 
 		    /* convert mm to m */
-		    VSCALE((*buf[vert_count]).v, v->vg_p->coord, 1.0/1000.0);
+		    VSCALE((*tribuf[vert_count]).v, v->vg_p->coord, 1.0/1000.0);
 		    vert_count++;
 		}
 		if (vert_count > 3)
@@ -142,38 +124,77 @@ nmg_to_adrt_internal(struct nmgregion *r, struct db_full_path *pathp, int region
 		else if (vert_count < 3)
 		    continue;
 
-		tie_push(cur_tie, buf, 1, mesh, 0);
+		tie_push(cur_tie, tribuf, 1, mesh, 0);
 		region_polys++;
 	    }
 	}
     }
 
-    bu_free(buf[0], "vert");
-    bu_free(buf[1], "vert");
-    bu_free(buf[2], "vert");
-    bu_free(buf, "tri");
     /* region_name must not be freed until we're done with the tie engine. */
 }
 
 int
-nmg_to_adrt_regstart(struct db_tree_state *ts, struct db_full_path *path, const struct rt_comb_internal *rci, genptr_t client_data) {
+nmg_to_adrt_regstart(struct db_tree_state *ts, struct db_full_path *path, const struct rt_comb_internal *rci, genptr_t client_data)
+{
     /* 
      * if it's a simple single bot region, just eat the bots and return -1.
-     * Omnomnom. 
+     * Omnomnom. Return 0 to do nmg eval. 
      */
     struct directory *dir;
+    struct rt_db_internal intern;
+    struct rt_bot_internal *bot;
+    struct adrt_mesh_s *mesh;
+
     RT_CHECK_COMB(rci);
     if(rci->tree == NULL)
-	return -1;
+	return 0;
     RT_CK_TREE(rci->tree);
     if( rci->tree->tr_op != OP_DB_LEAF ) 
 	return 0;
     dir = db_lookup(dbip, rci->tree->tr_l.tl_name, 1);
-    if(dir->d_minor_type != ID_BOT)
+    if(dir->d_minor_type != ID_BOT && dir->d_minor_type != ID_NMG)
 	return 0;
 
-    printf("%s is a bot, do magic here.\n", dir->d_namep);
+    printf("%s is a bot/nmg, do magic here.\n", dir->d_namep);
+    if(rt_db_get_internal(&intern, dir, dbip, (fastf_t *)NULL, &rt_uniresource) < 0) {
+	printf("Failed to load\n");
+	return 0;
+    }
 
+    mesh = BU_GETSTRUCT(mesh, adrt_mesh_s);
+
+    BU_LIST_PUSH(&(isst.meshes->l), &(mesh->l));
+
+    mesh->texture = NULL;
+    mesh->flags = 0;
+    mesh->attributes = (struct adrt_mesh_attributes_s *)bu_malloc(sizeof(struct adrt_mesh_attributes_s), "adrt mesh attributes");
+
+    /*
+    VMOVE(mesh->attributes->color.v, color);
+    */
+    strncpy(mesh->name, db_path_to_string(path), 255);
+    printf("%s fastloaded\n", mesh->name);
+
+    if(intern.idb_minor_type == ID_NMG) {
+        nmg_to_adrt_internal(mesh, (struct nmgregion *)intern.idb_ptr);
+	return -1;
+    } else if (intern.idb_minor_type == ID_BOT) {
+	struct rt_bot_internal *bot = intern.idb_ptr;
+	int i;
+
+	RT_BOT_CK_MAGIC(bot);
+
+	for(i=0;i<bot->num_faces;i++)
+	{
+	    VSCALE((*tribuf[0]).v, &bot->vertices[3*bot->faces[i+0]], 1.0/1000.0);
+	    VSCALE((*tribuf[1]).v, &bot->vertices[3*bot->faces[i+1]], 1.0/1000.0);
+	    VSCALE((*tribuf[2]).v, &bot->vertices[3*bot->faces[i+2]], 1.0/1000.0);
+	    tie_push(cur_tie, tribuf, 1, mesh, 0);
+	}
+	return -1;
+    }
+
+    bu_log("Strange, %d is not %d or %d\n", ID_BOT, ID_NMG);
     return 0;
 }
 
@@ -182,8 +203,6 @@ nmg_to_adrt_gcvwrite(struct nmgregion *r, struct db_full_path *pathp, int region
 {
     struct model *m;
     struct shell *s;
-    int region_polys=0;
-    TIE_3 **buf;
     struct adrt_mesh_s *mesh;
 
     NMG_CK_REGION(r);
@@ -195,7 +214,18 @@ nmg_to_adrt_gcvwrite(struct nmgregion *r, struct db_full_path *pathp, int region
     /* triangulate model */
     nmg_triangulate_model(m, &tol);
 
-    nmg_to_adrt_internal(r, pathp, region_id, material_id, color);
+    mesh = BU_GETSTRUCT(mesh, adrt_mesh_s);
+
+    BU_LIST_PUSH(&(isst.meshes->l), &(mesh->l));
+
+    mesh->texture = NULL;
+    mesh->flags = 0;
+    mesh->attributes = (struct adrt_mesh_attributes_s *)bu_malloc(sizeof(struct adrt_mesh_attributes_s), "adrt mesh attributes");
+
+    VMOVE(mesh->attributes->color.v, color);
+    strncpy(mesh->name, db_path_to_string(pathp), 255);
+
+    nmg_to_adrt_internal(mesh, r);
 }
 
 int
@@ -257,6 +287,11 @@ load_g (tie_t *tie, const char *db, int argc, const char **argv)
     BU_GETSTRUCT(isst.meshes, adrt_mesh_s);
     BU_LIST_INIT(&(isst.meshes->l));
 
+    tribuf = (TIE_3 **)bu_malloc(sizeof(TIE_3 *) * 3, "triangle tribuffer tribuffer");
+    tribuf[0] = (TIE_3 *)bu_malloc(sizeof(TIE_3) * 3, "triangle tribuffer");
+    tribuf[1] = (TIE_3 *)bu_malloc(sizeof(TIE_3) * 3, "triangle tribuffer");
+    tribuf[2] = (TIE_3 *)bu_malloc(sizeof(TIE_3) * 3, "triangle tribuffer");
+
     (void) db_walk_tree(dbip, 
 			argc,			/* number of toplevel regions */			
 			argv,			/* region names */
@@ -271,6 +306,10 @@ load_g (tie_t *tie, const char *db, int argc, const char **argv)
     nmg_km(the_model);
     rt_vlist_cleanup();
     db_close(dbip);
+    bu_free(tribuf[0], "vert");
+    bu_free(tribuf[1], "vert");
+    bu_free(tribuf[2], "vert");
+    bu_free(tribuf, "tri");
 
     tie_prep(cur_tie);
 
