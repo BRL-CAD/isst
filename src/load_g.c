@@ -155,7 +155,6 @@ nmg_to_adrt_regstart(struct db_tree_state *ts, struct db_full_path *path, const 
     if(dir->d_minor_type != ID_BOT && dir->d_minor_type != ID_NMG)
 	return 0;
 
-    printf("%s is a bot/nmg, do magic here.\n", dir->d_namep);
     if(rt_db_get_internal(&intern, dir, dbip, (fastf_t *)NULL, &rt_uniresource) < 0) {
 	printf("Failed to load\n");
 	return 0;
@@ -173,7 +172,6 @@ nmg_to_adrt_regstart(struct db_tree_state *ts, struct db_full_path *path, const 
     VMOVE(mesh->attributes->color.v, color);
     */
     strncpy(mesh->name, db_path_to_string(path), 255);
-    printf("%s fastloaded\n", mesh->name);
 
     if(intern.idb_minor_type == ID_NMG) {
         nmg_to_adrt_internal(mesh, (struct nmgregion *)intern.idb_ptr);
@@ -236,6 +234,7 @@ load_g (tie_t *tie, const char *db, int argc, const char **argv)
     struct model *the_model;
     struct rt_tess_tol ttol;		/* tesselation tolerance in mm */
     struct db_tree_state tree_state;	/* includes tol & model */
+    TIE_3 max;
 
     cur_tie = tie;	/* blehhh, global... need locking. */
 
@@ -259,6 +258,7 @@ load_g (tie_t *tie, const char *db, int argc, const char **argv)
     tol.perp = 1e-5;
     tol.para = 1 - tol.perp;
 
+    tie_check_degenerate = 0;
     /* init resources we might need */
     rt_init_resource(&rt_uniresource, 0, NULL);
 
@@ -312,6 +312,18 @@ load_g (tie_t *tie, const char *db, int argc, const char **argv)
     bu_free(tribuf, "tri");
 
     tie_prep(cur_tie);
+
+    VMOVE(isst.geom_min.v, tie->min.v);
+    VMOVE(isst.geom_max.v, tie->max.v);
+    VADD2(isst.geom_center.v,  isst.geom_min.v,  isst.geom_max.v);
+    VSCALE(isst.geom_center.v,  isst.geom_center.v,  0.5);
+
+    max.v[0] = fabs (isst.geom_min.v[0]) > fabs (isst.geom_max.v[0]) ? fabs (isst.geom_min.v[0]) : fabs (isst.geom_min.v[0]);
+    max.v[1] = fabs (isst.geom_min.v[1]) > fabs (isst.geom_max.v[1]) ? fabs (isst.geom_min.v[1]) : fabs (isst.geom_min.v[1]);
+    max.v[2] = fabs (isst.geom_min.v[2]) > fabs (isst.geom_max.v[2]) ? fabs (isst.geom_min.v[2]) : fabs (isst.geom_min.v[2]);
+
+    isst.geom_radius = sqrt (max.v[0]*max.v[0] + max.v[1]*max.v[1] + max.v[2]*max.v[2]);
+    isst.pid = 0;
 
     return 0;
 }

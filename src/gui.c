@@ -213,8 +213,10 @@ isst_local_worker (gpointer moocow) {
     while(1) {
 
 	/* spinlock. Fix this. */
-	if(!isst.update_avail)
+	if(!isst.update_avail) {
 	    usleep(100);
+	    continue;
+	}
 
 	isst.update_avail = 0;
 	isst.update_idle = 0;
@@ -997,7 +999,6 @@ load_g_project_callback (GtkWidget *widget, gpointer ptr)
     attach_master(&isst.master);
 
     if(isst.work_frame == isst_local_work_frame) {
-	    TIE_3 max;
 	    struct timeval ts[2];
 
 	    GTK_WIDGET_UNSET_FLAGS (isst_container, GTK_NO_SHOW_ALL);
@@ -1008,18 +1009,6 @@ load_g_project_callback (GtkWidget *widget, gpointer ptr)
 	    load_g(tie, file, 1, argv);
 	    gettimeofday(ts+1, NULL);
 	    printf("Time to load: %.2f seconds\n", (((double)ts[1].tv_sec+(double)ts[1].tv_usec/(double)1e6) - ((double)ts[0].tv_sec+(double)ts[0].tv_usec/(double)1e6)));
-
-	    VMOVE(isst.geom_min.v, tie->min.v);
-	    VMOVE(isst.geom_max.v, tie->max.v);
-	    VADD2(isst.geom_center.v,  isst.geom_min.v,  isst.geom_max.v);
-	    VSCALE(isst.geom_center.v,  isst.geom_center.v,  0.5);
-
-	    max.v[0] = fabs (isst.geom_min.v[0]) > fabs (isst.geom_max.v[0]) ? fabs (isst.geom_min.v[0]) : fabs (isst.geom_min.v[0]);
-	    max.v[1] = fabs (isst.geom_min.v[1]) > fabs (isst.geom_max.v[1]) ? fabs (isst.geom_min.v[1]) : fabs (isst.geom_min.v[1]);
-	    max.v[2] = fabs (isst.geom_min.v[2]) > fabs (isst.geom_max.v[2]) ? fabs (isst.geom_min.v[2]) : fabs (isst.geom_min.v[2]);
-
-	    isst.geom_radius = sqrt (max.v[0]*max.v[0] + max.v[1]*max.v[1] + max.v[2]*max.v[2]);
-	    isst.pid = 0;
 
 	    isst.update_avail = 1;
     } else {
@@ -1978,8 +1967,6 @@ isst_gui ()
 
     /* Display everything and enter the event loop */
     gtk_widget_show_all (isst_window);
-
-    gtk_main ();
 }
 
 
@@ -2033,10 +2020,27 @@ isst_free ()
 }
 
 void
-isst_init ()
+isst_init (const int argc, const char **argv)
 {
     isst_setup ();
     isst_gui ();
+
+    gtk_widget_show_all (isst_window);
+
+    if(argc>=2) {
+	isst.update_avail = 0;
+	isst.update_idle = 0;
+	attach_master(&isst.master);
+
+	load_g(tie, *argv, argc-1, argv+1);
+	GTK_WIDGET_UNSET_FLAGS (isst_container, GTK_NO_SHOW_ALL);
+	gtk_widget_show_all (isst_window);
+	isst.update_avail = 1;
+	isst.update_idle = 1;
+	isst.work_frame ();
+    }
+
+    gtk_main ();
 }
 
 /*

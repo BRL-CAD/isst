@@ -119,7 +119,7 @@ extern uint8_t isst_flags;
 extern isst_t isst;
 
 
-void isst_init (void);
+void isst_init (const int argc, const char **argv);
 void isst_azel_to_foc ();
 void isst_free();
 void isst_azel_to_foc();
