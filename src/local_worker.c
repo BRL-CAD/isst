@@ -24,10 +24,6 @@
  *
  */
 
-#include <gtk/gtk.h>
-
-#undef CLAMP
-
 #include "tie/tie.h"
 #include "tie/adrt.h"
 #include "tie/adrt_struct.h"
@@ -93,11 +89,7 @@ isst_local_worker (gpointer moocow) {
 		    render_cut_init(&camera.render, isst.shotline_pos, isst.shotline_dir);
 		    break;
 		case ISST_MODE_FLOS: 
-		    {
-			TIE_3 fpos;
-			VSET(fpos.v,  gtk_spin_button_get_value (GTK_SPIN_BUTTON (isst_flos_posx_spin)),  gtk_spin_button_get_value (GTK_SPIN_BUTTON (isst_flos_posy_spin)),  gtk_spin_button_get_value (GTK_SPIN_BUTTON (isst_flos_posz_spin)));
-			render_flos_init(&camera.render, fpos);
-		    }
+		    render_flos_init(&camera.render, isst.shotline_pos);
 		    break;
 		default:
 		    bu_log("Bad mode: %d\n", isst.mode);
@@ -129,11 +121,7 @@ isst_local_worker (gpointer moocow) {
 	}
 
 	/* shove results into the gdk canvas */
-	gdk_threads_enter ();
-	gdk_draw_rgb_image (isst_context->window, isst_context->style->fg_gc[GTK_STATE_NORMAL],
-		0, 0, ISST_CONTEXT_W, ISST_CONTEXT_H, GDK_RGB_DITHER_NONE,
-		isst.buffer_image.data, ISST_CONTEXT_W * 3);
-	gdk_threads_leave ();
+	paint_context();
 	isst.update_idle = 1;
     }
     return;

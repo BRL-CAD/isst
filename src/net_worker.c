@@ -40,6 +40,35 @@
 #include "tie/adrt_struct.h"
 #include "isst.h"
 
+extern GtkWidget *isst_window;
+extern GtkWidget *isst_container;
+extern GtkWidget *isst_context;
+
+/* Navigation */
+extern GtkWidget *isst_grid_spin;
+extern GtkWidget *isst_posx_spin;
+extern GtkWidget *isst_posy_spin;
+extern GtkWidget *isst_posz_spin;
+extern GtkWidget *isst_azim_spin;
+extern GtkWidget *isst_elev_spin;
+extern GtkWidget *isst_mouse_speed_spin;
+
+/* Shotline */
+extern GtkWidget *isst_cellx_spin;
+extern GtkWidget *isst_celly_spin;
+extern GtkWidget *isst_deltax_spin;
+extern GtkWidget *isst_deltay_spin;
+extern GtkWidget *isst_name_entry;
+extern GtkWidget *isst_inhit_entry;
+
+/* Fragment Line of Sight */
+extern GtkWidget *isst_flos_posx_spin;
+extern GtkWidget *isst_flos_posy_spin;
+extern GtkWidget *isst_flos_posz_spin;
+
+/* Shotline Table */
+extern GtkListStore *isst_shotline_store;
+
 /* send out a work request to the network */
 void
 isst_net_work_frame()

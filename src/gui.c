@@ -111,6 +111,15 @@ generic_dialog (char *message)
     gtk_widget_show (dialog);
 }
 
+void
+paint_context() 
+{
+	gdk_threads_enter ();
+	gdk_draw_rgb_image (isst_context->window, isst_context->style->fg_gc[GTK_STATE_NORMAL],
+		0, 0, ISST_CONTEXT_W, ISST_CONTEXT_H, GDK_RGB_DITHER_NONE,
+		isst.buffer_image.data, ISST_CONTEXT_W * 3);
+	gdk_threads_leave ();
+}
 
 static void
 isst_project_widgets ()
@@ -522,7 +531,8 @@ VIEW_CB(view_normal, NORMAL);
 VIEW_CB(view_depth, DEPTH);
 VIEW_CB(view_component, COMPONENT);
 VIEW_CALLBACK(view_cut, CUT, isst.camera_type=RENDER_CAMERA_PERSPECTIVE);
-VIEW_CALLBACK(flos, FLOS, isst.camera_type=RENDER_CAMERA_PERSPECTIVE);
+VIEW_CALLBACK(flos, FLOS, isst.camera_type=RENDER_CAMERA_PERSPECTIVE;
+    VSET(isst.shotline_pos.v,  gtk_spin_button_get_value (GTK_SPIN_BUTTON (isst_flos_posx_spin)),  gtk_spin_button_get_value (GTK_SPIN_BUTTON (isst_flos_posy_spin)),  gtk_spin_button_get_value (GTK_SPIN_BUTTON (isst_flos_posz_spin))));
 VIEW_CALLBACK(shotline, SHOTLINE, 
 	isst.camera_type = RENDER_CAMERA_ORTHOGRAPHIC;
 	isst.mouse_x = (int16_t) gtk_spin_button_get_value (GTK_SPIN_BUTTON (isst_cellx_spin));
