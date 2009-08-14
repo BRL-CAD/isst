@@ -17,6 +17,7 @@
  * License along with this file; see the file named COPYING for more
  * information.
  */
+
 /** @file load_g.c
  *
  * Attempt to load a single top-level comb from a named .g file. The file must
@@ -51,6 +52,9 @@
 #include "tie/tie.h"
 #include "tie/adrt.h"
 #include "tie/adrt_struct.h"
+
+#include <gtk/gtk.h> /* just for isst.h */
+
 #include "isst.h"
 
 
