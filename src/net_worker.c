@@ -24,6 +24,8 @@
  *
  */
 
+#include <stdio.h>
+#include <string.h>
 
 #include <netdb.h>
 #include <netinet/in.h>
@@ -166,7 +168,7 @@ isst_net_worker (gpointer moocow)
     }
 
     srv_addr.sin_family = srv_hostent.h_addrtype;
-    bcopy(srv_hostent.h_addr_list[0], (char *) &srv_addr.sin_addr.s_addr, srv_hostent.h_length);
+    memcpy(srv_hostent.h_addr_list[0], (char *) &srv_addr.sin_addr.s_addr, srv_hostent.h_length);
     srv_addr.sin_port = htons (ADRT_PORT);
 
     if (bind (isst.socket, (struct sockaddr *)&my_addr, sizeof (my_addr)) < 0)
