@@ -114,11 +114,15 @@ generic_dialog (char *message)
 void
 paint_context() 
 {
-	gdk_threads_enter ();
-	gdk_draw_rgb_image (isst_context->window, isst_context->style->fg_gc[GTK_STATE_NORMAL],
-		0, 0, ISST_CONTEXT_W, ISST_CONTEXT_H, GDK_RGB_DITHER_NONE,
-		isst.buffer_image.data, ISST_CONTEXT_W * 3);
-	gdk_threads_leave ();
+    gdk_threads_enter ();
+    /* probably manipulate the image buffer to add the crosshairs? then do away
+     * with draw_cross_hairs ? */
+    gdk_draw_rgb_image (isst_context->window, isst_context->style->fg_gc[GTK_STATE_NORMAL],
+	    0, 0, ISST_CONTEXT_W, ISST_CONTEXT_H, GDK_RGB_DITHER_NONE,
+	    isst.buffer_image.data, ISST_CONTEXT_W * 3);
+    if (isst.mode == ISST_MODE_SHOTLINE)
+	draw_cross_hairs (isst.mouse_x, isst.mouse_y);
+    gdk_threads_leave ();
 }
 
 static void
@@ -142,7 +146,9 @@ draw_cross_hairs (int16_t x, int16_t y)
     int i;
     uint8_t *p;
 
+    /*
     gdk_threads_enter ();
+    */
 
     /* Update cellx and celly spin buttons */
     gtk_spin_button_set_value (GTK_SPIN_BUTTON (isst_cellx_spin), x);
@@ -189,7 +195,9 @@ draw_cross_hairs (int16_t x, int16_t y)
     gdk_draw_rgb_image (isst_context->window, isst_context->style->fg_gc[GTK_STATE_NORMAL], 
 	    x, 0, 1, ISST_CONTEXT_H, GDK_RGB_DITHER_NONE, line, 3);
 
+    /*
     gdk_threads_leave ();
+    */
 }
 
 static void
@@ -863,6 +871,7 @@ fire_shotline_callback (GtkWidget *widget, gpointer ptr)
     VADD2(ray.pos.v,  ray.pos.v,  v2.v);
 
     if(isst.work_frame == isst_local_work_frame) {
+	bu_log("KAPOW!!!\n");
 	/* do some... stuff... for render_util_shotline_list... */
     }	else {
 	/* Send request for next frame */
@@ -1161,18 +1170,6 @@ isst_gui ()
 {
     GtkWidget *main_vbox;
     GtkWidget *menu_bar;
-
-
-    /* Start application with all flags off */
-    isst_flags = 0;
-
-    /* Initialize G-Threads */
-    g_thread_init (NULL);
-    gdk_threads_init ();
-
-    /* Initialize GTK */
-    gtk_init (0, 0);
-
 
     /* Create the window */
     isst_window = gtk_window_new (GTK_WINDOW_TOPLEVEL);
@@ -1622,9 +1619,20 @@ isst_free ()
 }
 
 void
-isst_init (const int argc, const char **argv)
+isst_init (int argc, char **argv)
 {
     isst_setup ();
+
+    /* Start application with all flags off */
+    isst_flags = 0;
+
+    /* Initialize G-Threads */
+    g_thread_init (NULL);
+    gdk_threads_init ();
+
+    /* Initialize GTK */
+    gtk_init (&argc, &argv);
+
     isst_gui ();
 
     gtk_widget_show_all (isst_window);
