@@ -115,6 +115,7 @@ void
 paint_context() 
 {
     gdk_threads_enter ();
+    gdk_window_freeze_updates ( GDK_WINDOW(isst_context->window) );
     /* probably manipulate the image buffer to add the crosshairs? then do away
      * with draw_cross_hairs ? */
     gdk_draw_rgb_image (isst_context->window, isst_context->style->fg_gc[GTK_STATE_NORMAL],
@@ -122,6 +123,7 @@ paint_context()
 	    isst.buffer_image.data, ISST_CONTEXT_W * 3);
     if (isst.mode == ISST_MODE_SHOTLINE)
 	draw_cross_hairs (isst.mouse_x, isst.mouse_y);
+    gdk_window_thaw_updates ( GDK_WINDOW(isst_context->window) );
     gdk_threads_leave ();
 }
 
@@ -871,9 +873,53 @@ fire_shotline_callback (GtkWidget *widget, gpointer ptr)
     VADD2(ray.pos.v,  ray.pos.v,  v2.v);
 
     if(isst.work_frame == isst_local_work_frame) {
-	bu_log("KAPOW!!!\n");
-	/* do some... stuff... for render_util_shotline_list... */
-    }	else {
+	char *msg = NULL;
+	int dlen;
+	TIE_3 inhit;
+	uint32_t ind, num, i;
+	char text[256], thickness[16];
+	uint8_t c;
+	GtkTreeIter iter;
+	tfloat t;
+
+	ray.depth = 0;
+	render_util_shotline_list(tie, &ray, (void **)&msg, &dlen);
+
+	ind = 0;
+	/* In-Hit */
+	TCOPY(TIE_3, msg, ind, &inhit, 0);
+	ind += sizeof (TIE_3);
+	sprintf (text, "%.3f %.3f %.3f", inhit.v[0], inhit.v[1], inhit.v[2]);
+	gtk_entry_set_text (GTK_ENTRY (isst_inhit_entry), text);
+
+	TCOPY(uint32_t, msg, ind, &num, 0);
+	ind += 4;
+
+	/* Update component table */
+	gtk_list_store_clear (isst_shotline_store);
+	for (i = 0; i < num; i++)
+	{
+	    TCOPY(uint8_t, msg, ind, &c, 0);
+	    ind += 1;
+
+	    bcopy(&msg[ind], text, c);
+	    ind += c;
+
+	    TCOPY(tfloat, msg, ind, &t, 0);
+	    t *= 1000; /* Convert to milimeters */
+	    ind += sizeof (tfloat);
+	    sprintf (thickness, "%.1f", t);
+
+	    gtk_list_store_append (isst_shotline_store, &iter);
+	    gtk_list_store_set (isst_shotline_store, &iter, 0, i+1, 1, text, 2, thickness, -1);
+	}
+
+	/* Shotline position and direction */
+	TCOPY(TIE_3, msg, ind, &isst.shotline_pos, 0);
+	ind += sizeof (TIE_3);
+	TCOPY(TIE_3, msg, ind, &isst.shotline_dir, 0);
+	ind += sizeof (TIE_3);
+    } else {
 	/* Send request for next frame */
 	op = ADRT_NETOP_WORK;
 	tienet_send (isst.socket, &op, 1);
@@ -888,7 +934,6 @@ fire_shotline_callback (GtkWidget *widget, gpointer ptr)
 
 	/* workspace id */
 	tienet_send (isst.socket, &isst.wid, 2);
-
 
 	/* Send Position and Direction */
 	tienet_send (isst.socket, ray.pos.v, sizeof (TIE_3));
