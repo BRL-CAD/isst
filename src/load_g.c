@@ -149,6 +149,8 @@ nmg_to_adrt_regstart(struct db_tree_state *ts, struct db_full_path *path, const 
     struct rt_bot_internal *bot;
     struct adrt_mesh_s *mesh;
 
+    return 0;
+
     RT_CHECK_COMB(rci);
     if(rci->tree == NULL)
 	return 0;
@@ -171,11 +173,14 @@ nmg_to_adrt_regstart(struct db_tree_state *ts, struct db_full_path *path, const 
     mesh->texture = NULL;
     mesh->flags = 0;
     mesh->attributes = (struct adrt_mesh_attributes_s *)bu_malloc(sizeof(struct adrt_mesh_attributes_s), "adrt mesh attributes");
+    VSET(mesh->attributes->color.v, 0, 1, 1);
 
     /*
     VMOVE(mesh->attributes->color.v, color);
     */
     strncpy(mesh->name, db_path_to_string(path), 255);
+
+    printf("Fastloading %s\n", mesh->name);
 
     if(intern.idb_minor_type == ID_NMG) {
         nmg_to_adrt_internal(mesh, (struct nmgregion *)intern.idb_ptr);
@@ -188,9 +193,16 @@ nmg_to_adrt_regstart(struct db_tree_state *ts, struct db_full_path *path, const 
 
 	for(i=0;i<bot->num_faces;i++)
 	{
-	    VSCALE((*tribuf[0]).v, &bot->vertices[3*bot->faces[i+0]], 1.0/1000.0);
-	    VSCALE((*tribuf[1]).v, &bot->vertices[3*bot->faces[i+1]], 1.0/1000.0);
-	    VSCALE((*tribuf[2]).v, &bot->vertices[3*bot->faces[i+2]], 1.0/1000.0);
+	    VSCALE((*tribuf[0]).v, &bot->vertices[bot->faces[3*i+0]], 1.0/1000.0);
+	    VSCALE((*tribuf[1]).v, &bot->vertices[bot->faces[3*i+1]], 1.0/1000.0);
+	    VSCALE((*tribuf[2]).v, &bot->vertices[bot->faces[3*i+2]], 1.0/1000.0);
+	    /*
+	    printf("%d %d %d\n", bot->faces[3*i+0], bot->faces[3*i+1], bot->faces[3*i+2]);
+	    printf("%d	%f %f %f - %f %f %f - %f %f %f\n", i, 
+		    V3ARGS((*tribuf[0]).v), 
+		    V3ARGS((*tribuf[1]).v), 
+		    V3ARGS((*tribuf[2]).v));
+	    */
 	    tie_push(cur_tie, tribuf, 1, mesh, 0);
 	}
 	return -1;
