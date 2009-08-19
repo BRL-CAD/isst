@@ -151,6 +151,7 @@ draw_cross_hairs (int16_t x, int16_t y)
     /*
     gdk_threads_enter ();
     */
+    gdk_window_freeze_updates ( GDK_WINDOW(isst_context->window) );
 
     /* Update cellx and celly spin buttons */
     gtk_spin_button_set_value (GTK_SPIN_BUTTON (isst_cellx_spin), x);
@@ -197,6 +198,7 @@ draw_cross_hairs (int16_t x, int16_t y)
     gdk_draw_rgb_image (isst_context->window, isst_context->style->fg_gc[GTK_STATE_NORMAL], 
 	    x, 0, 1, ISST_CONTEXT_H, GDK_RGB_DITHER_NONE, line, 3);
 
+    gdk_window_thaw_updates ( GDK_WINDOW(isst_context->window) );
     /*
     gdk_threads_leave ();
     */
@@ -652,6 +654,10 @@ static void
 menuitem_load_g_callback ()
 {
     /* make a dialog box */
+/*
+    selected_filename = gtk_file_selection_get_filename (GTK_FILE_SELECTION (widget));
+    printf("%s\n", selected_filename);
+*/
     load_g_project_callback(NULL, 0);
 }
 
@@ -738,7 +744,9 @@ apply_delta_callback (GtkWidget *widget, gpointer ptr)
     cellx = (int16_t) gtk_spin_button_get_value (GTK_SPIN_BUTTON (isst_cellx_spin));
     celly = (int16_t) gtk_spin_button_get_value (GTK_SPIN_BUTTON (isst_celly_spin));
 
+    gdk_window_freeze_updates ( GDK_WINDOW(isst_context->window) );
     draw_cross_hairs (cellx, celly);
+    gdk_window_thaw_updates ( GDK_WINDOW(isst_context->window) );
 
     isst.mouse_x = cellx;
     isst.mouse_y = celly;
@@ -1680,6 +1688,7 @@ isst_init (int argc, char **argv)
 
     isst_gui ();
 
+    GTK_WIDGET_UNSET_FLAGS (isst_context, GTK_DOUBLE_BUFFERED);
     gtk_widget_show_all (isst_window);
 
     if(argc>=2) {
