@@ -1,4 +1,3 @@
-* Cope with BRL-CAD in unusual places.
 * Enable fast bot/nmg loading
 * Give load dialog a filechooser
 * Allow load dialog to look into .g file for selection

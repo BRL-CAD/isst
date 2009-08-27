@@ -97,26 +97,20 @@ AC_ARG_ENABLE(debug,
 
 AC_CHECK_FUNCS(strnstr)
 
-## Check for ADRTInstallation
-## "/usr/adrt" by default
-
-# Compile in ADRT support if specified by user
-with_adrtpfx=no
-AC_ARG_WITH(adrt, AC_HELP_STRING(--with-adrt=path,
-                [Specify location of ADRT Installation]),
+# Compile in BRLCAD support if specified by user
+BRLCAD_CFLAGS="-I/usr/brlcad/include -I/usr/brlcad/include/brlcad"
+BRLCAD_LIBS="-L/usr/brlcad/lib"
+AC_ARG_WITH(brlcad, AC_HELP_STRING(--with-brlcad=path,
+                [Specify location of BRLCAD Installation]),
         [
-                ADRT_CFLAGS="-I$withval/include"
-                ADRT_LIBS="$withval/lib/librender.la"
-                AC_DEFINE(HAVE_ADRT,1,Checking for ADRT Installation)
-                with_adrtpfx=yes
+                BRLCAD_CFLAGS="-I$withval/include -I$withval/include/brlcad"
+                BRLCAD_LIBS="-L$withval/lib"
+                AC_DEFINE(HAVE_BRLCAD,1,Checking for BRLCAD Installation)
         ]
 )
-AC_SUBST(ADRT_CFLAGS)
-AC_SUBST(ADRT_LIBS)
-AM_CONDITIONAL(HAVE_ADRT, [test "x$with_adrtpfx" != "xno"])
 
-TIE_CFLAGS="-I/usr/brlcad/include -I/usr/brlcad/include/brlcad -DTIE_PRECISION=0 -DHAX=1"
-TIE_LIBS="-L/usr/brlcad/lib -ltie -lrender -lrt -lgcv"
+TIE_CFLAGS="$BRLCAD_CFLAGS -DTIE_PRECISION=0 -DHAX=1"
+TIE_LIBS="$BRLCAD_LIBS -ltie -lrender -lrt -lgcv"
 AC_SUBST(TIE_CFLAGS)
 AC_SUBST(TIE_LIBS)
 
