@@ -686,10 +686,7 @@ menuitem_load_g_callback ()
 
 AGAIN:
     if(gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_OK) {
-	char *fn, *reg;
-	fn = gtk_entry_get_text(GTK_ENTRY(file));
-	reg = gtk_entry_get_text(GTK_ENTRY(reg));
-	if(load_g_project_callback(fn,reg)) {
+	if(load_g_project_callback(gtk_entry_get_text(GTK_ENTRY(file)), gtk_entry_get_text(GTK_ENTRY(regions)))) {
 	    GtkWidget *heh;
 	    heh = gtk_message_dialog_new (GTK_WINDOW (isst_window),
 		    GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
@@ -702,7 +699,6 @@ AGAIN:
     }
     gtk_widget_destroy(dialog);
 }
-
 
 static void
 menuitem_about_callback ()
@@ -1178,8 +1174,10 @@ static GtkActionEntry entries[] = {
     { "Component View",	NULL,			"Component View",	NULL,		"Component View",	menuitem_view_component_callback },
     { "Cut View",		NULL,			"Cut View",		NULL,		"Cut View",		menuitem_view_cut_callback },
     { "Shotline",		NULL,			"Shotline",		NULL,		"Shotline",		menuitem_shotline_callback },
+#if 0
     { "FLOS",		NULL,			"FLOS",			NULL,		"FLOS",			menuitem_flos_callback },
     { "BAD",		NULL,			"BAD",			NULL,		"BAD",			menuitem_exit_callback },
+#endif
     { "ViewMenu",		NULL,			"_View" },
     { "Front",		NULL,			"Front",		NULL,		"Front",		menuitem_view_front_callback },
     { "Back",		NULL,			"Back",			NULL,		"Back",			menuitem_view_back_callback },
@@ -1207,8 +1205,10 @@ static const char *ui_description =
 "			<menuitem action='Component View'/>"
 "			<menuitem action='Cut View'/>"
 "			<menuitem action='Shotline'/>"
+#if 0
 "			<menuitem action='FLOS'/>"
 "			<menuitem action='BAD'/>"
+#endif
 "		</menu>"
 "		<menu action='ViewMenu'>"
 "			<menuitem action='Front'/>"
