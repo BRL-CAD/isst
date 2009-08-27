@@ -24,6 +24,8 @@
  *
  */
 
+#include "isst_config.h"
+
 #include <gtk/gtk.h>
 #include <pthread.h>
 #include <stdio.h>
@@ -50,6 +52,12 @@
 #include "tie/adrt_struct.h"
 
 #include "isst.h"
+
+
+#ifndef HAVE_STRNSTR
+char *strnstr(const char *s1, const char *s2, size_t n) { return strstr(s1, s2); }
+#endif
+
 
 #define TABLE_BORDER_WIDTH	0
 

@@ -95,6 +95,7 @@ AC_ARG_ENABLE(debug,
 	]
 )
 
+AC_CHECK_FUNCS(strnstr)
 
 ## Check for ADRTInstallation
 ## "/usr/adrt" by default
