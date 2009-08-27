@@ -1,0 +1,12 @@
+* Cope with BRL-CAD in unusual places.
+* Enable fast bot/nmg loading
+* Give load dialog a filechooser
+* Allow load dialog to look into .g file for selection
+* Shift to threading pools instead of creating threads per job
+* Autosize and set precision based on model size
+* Autosize ortho view better
+* Eliminate crosshair flicker (better crosshairs?)
+* Re-enable network computation
+* Make window resizable
+* Design/implement plugin system with tab generation (glade?)
+* Re-do RISE type capabilities?
