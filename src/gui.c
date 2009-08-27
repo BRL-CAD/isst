@@ -602,13 +602,12 @@ static void load_frame_attribute()
     tienet_send (isst.socket, &isst.wid, 2);
 }
 
-static void
-load_g_project_callback (GtkWidget *widget, gpointer ptr)
+static int
+load_g_project_callback (char *file, char *region)
 {
     uint8_t op;
     char buf[BUFSIZ];
-    const char *file = "/tmp/ktank.g", *argv[] = {"tank",NULL};
-    int size, i;
+    int size, i, rval;
 
     attach_master(&isst.master);
 
@@ -620,7 +619,7 @@ load_g_project_callback (GtkWidget *widget, gpointer ptr)
 	    
 	    /* init/load/prep the tie engine */
 	    gettimeofday(ts, NULL);
-	    load_g(tie, file, 1, argv);
+	    rval = load_g(tie, file, 1, &region);
 	    gettimeofday(ts+1, NULL);
 	    printf("Time to load: %.2f seconds\n", (((double)ts[1].tv_sec+(double)ts[1].tv_usec/(double)1e6) - ((double)ts[0].tv_sec+(double)ts[0].tv_usec/(double)1e6)));
 
@@ -648,17 +647,60 @@ load_g_project_callback (GtkWidget *widget, gpointer ptr)
     }
 
     isst.work_frame ();
+    return rval;
 }
 
 static void
 menuitem_load_g_callback ()
 {
-    /* make a dialog box */
-/*
-    selected_filename = gtk_file_selection_get_filename (GTK_FILE_SELECTION (widget));
-    printf("%s\n", selected_filename);
-*/
-    load_g_project_callback(NULL, 0);
+    GtkWidget *dialog, *table, *file, *regions, *label;
+    gint res;
+
+    dialog = gtk_dialog_new_with_buttons (
+	    "Load BRL-CAD Geometry", 
+	    GTK_WINDOW(isst_window), 
+	    GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT, 
+	    GTK_STOCK_OK, GTK_RESPONSE_OK, 
+	    GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL, 
+	    NULL);
+
+    table = gtk_table_new (2, 2, FALSE);
+    gtk_box_pack_start (GTK_BOX (GTK_DIALOG (dialog)->vbox), table, FALSE, FALSE, 0);
+    gtk_table_set_row_spacings (GTK_TABLE (table), 4);
+    gtk_table_set_col_spacings (GTK_TABLE (table), 4);
+
+    label = gtk_label_new_with_mnemonic ("_File");
+    gtk_table_attach_defaults (GTK_TABLE (table), label, 0, 1, 0, 1);
+    file = gtk_entry_new ();
+    gtk_table_attach_defaults (GTK_TABLE (table), file, 1, 2, 0, 1);
+    gtk_label_set_mnemonic_widget (GTK_LABEL (label), file);
+
+    label = gtk_label_new_with_mnemonic ("_Region");
+    gtk_table_attach_defaults (GTK_TABLE (table), label, 0, 1, 1, 2);
+    regions = gtk_entry_new ();
+    gtk_table_attach_defaults (GTK_TABLE (table), regions, 1, 2, 1, 2);
+    gtk_label_set_mnemonic_widget (GTK_LABEL (label), regions);
+
+    gtk_widget_show_all (table);
+    gtk_widget_show (dialog);
+
+AGAIN:
+    if(gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_OK) {
+	char *fn, *reg;
+	fn = gtk_entry_get_text(GTK_ENTRY(file));
+	reg = gtk_entry_get_text(GTK_ENTRY(reg));
+	if(load_g_project_callback(fn,reg)) {
+	    GtkWidget *heh;
+	    heh = gtk_message_dialog_new (GTK_WINDOW (isst_window),
+		    GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
+		    GTK_MESSAGE_INFO, GTK_BUTTONS_OK,
+		    "Must enter a valid .g filename");
+	    gtk_dialog_run (GTK_DIALOG (heh));
+	    gtk_widget_destroy (heh);
+	    goto AGAIN;
+	}
+    }
+    gtk_widget_destroy(dialog);
 }
 
 

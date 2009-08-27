@@ -31,6 +31,7 @@
 
 #include <netdb.h>
 #include <netinet/in.h>
+#include <sys/socket.h>
 
 #include <gtk/gtk.h>
 
