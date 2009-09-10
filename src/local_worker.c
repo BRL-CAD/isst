@@ -70,28 +70,31 @@ isst_local_worker (gpointer moocow) {
 	isst.update_idle = 0;
 
 	if( oldmode != isst.mode ) {
+	    char buf[BUFSIZ];
 	    switch(isst.mode) {
 		case ISST_MODE_SHADED:
 		case ISST_MODE_SHOTLINE:
-		    render_phong_init(&camera.render);
+		    render_phong_init(&camera.render, NULL);
 		    break;
 		case ISST_MODE_NORMAL:
-		    render_normal_init(&camera.render);
+		    render_normal_init(&camera.render, NULL);
 		    break;
 		case ISST_MODE_DEPTH:
-		    render_depth_init(&camera.render);
+		    render_depth_init(&camera.render, NULL);
 		    break;
 		case ISST_MODE_COMPONENT:
-		    render_component_init(&camera.render);
+		    render_component_init(&camera.render, NULL);
 		    break;
 		case ISST_MODE_CUT:
 		    VMOVE(isst.shotline_pos.v, isst.camera_pos.v);
 		    VSUB2(isst.shotline_dir.v, isst.camera_pos.v, isst.camera_foc.v);
+		    snprintf(buf, BUFSIZ, "#(%f %f %f) #(%f %f %f)", V3ARGS(isst.shotline_pos.v), V3ARGS(isst.shotline_dir.v));
 		    printf("%.2f %.2f %.2f -> %.2f %.2f %.2f\n", V3ARGS(isst.shotline_pos.v), V3ARGS(isst.shotline_dir.v));
-		    render_cut_init(&camera.render, isst.shotline_pos, isst.shotline_dir);
+		    render_cut_init(&camera.render, buf);
 		    break;
 		case ISST_MODE_FLOS: 
-		    render_flos_init(&camera.render, isst.shotline_pos);
+		    snprintf(buf, BUFSIZ, "#(%f %f %f)", V3ARGS(isst.shotline_pos.v));
+		    render_flos_init(&camera.render, buf);
 		    break;
 		default:
 		    bu_log("Bad mode: %d\n", isst.mode);
