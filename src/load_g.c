@@ -53,8 +53,6 @@
 #include "tie/adrt.h"
 #include "tie/adrt_struct.h"
 
-#include <gtk/gtk.h> /* just for isst.h */
-
 #include "isst.h"
 
 
