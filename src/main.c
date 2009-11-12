@@ -106,7 +106,7 @@ int main(int argc, char **argv) {
     if(getenv("ADRT_MASTER"))
 	bu_vls_strcpy(&isst.master, getenv("ADRT_MASTER"));
 
-    isst_init ((const int)argc, (const char **)argv);
+    isst_init (argc, argv);
 
     return EXIT_SUCCESS;
 }

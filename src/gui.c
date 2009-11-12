@@ -611,13 +611,14 @@ static void load_frame_attribute()
 }
 
 static int
-load_g_project_callback (char *file, char *region)
+load_g_project_callback (const char *file, const char **region)
 {
     uint8_t op;
     char buf[BUFSIZ];
     int size, i, rval;
 
     attach_master(&isst.master);
+    region[1] = NULL;	/* force to one region until GUI is updated. */
 
     if(isst.work_frame == isst_local_work_frame) {
 	    struct timeval ts[2];
@@ -627,7 +628,7 @@ load_g_project_callback (char *file, char *region)
 	    
 	    /* init/load/prep the tie engine */
 	    gettimeofday(ts, NULL);
-	    rval = load_g(tie, file, 1, &region);
+	    rval = load_g(tie, file, 1, region);
 	    gettimeofday(ts+1, NULL);
 	    printf("Time to load: %.2f seconds\n", (((double)ts[1].tv_sec+(double)ts[1].tv_usec/(double)1e6) - ((double)ts[0].tv_sec+(double)ts[0].tv_usec/(double)1e6)));
 
@@ -694,7 +695,9 @@ menuitem_load_g_callback ()
 
 AGAIN:
     if(gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_OK) {
-	if(load_g_project_callback(gtk_entry_get_text(GTK_ENTRY(file)), gtk_entry_get_text(GTK_ENTRY(regions)))) {
+	const char *regs[2] = {NULL, NULL};	/* only handling one region from dialog */
+	regs[0] = gtk_entry_get_text(GTK_ENTRY(regions));
+	if(load_g_project_callback(gtk_entry_get_text(GTK_ENTRY(file)), regs)) {
 	    GtkWidget *heh;
 	    heh = gtk_message_dialog_new (GTK_WINDOW (isst_window),
 		    GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
@@ -1072,6 +1075,8 @@ context_motion_event (GtkWidget *widget, GdkEventMotion *event)
 
     dx = (int16_t) (event->x - isst.mouse_x);
     dy = (int16_t) (event->y - isst.mouse_y);
+
+    printf("Gotted a meece event: %d %d\n", dx, dy);
 
     /* Do Not Generate new Frames */
     if (isst.mode == ISST_MODE_SHOTLINE)
@@ -1746,7 +1751,7 @@ isst_init (int argc, char **argv)
 	isst.update_idle = 0;
 	attach_master(&isst.master);
 
-	load_g(tie, *argv, argc-1, argv+1);
+	load_g(tie, *argv, argc-1, (const char **)(argv+1));
 	GTK_WIDGET_UNSET_FLAGS (isst_container, GTK_NO_SHOW_ALL);
 	gtk_widget_show_all (isst_window);
 	isst.update_avail = 1;
