@@ -1,5 +1,5 @@
-bin_PROGRAMS = isst
-isst_SOURCES = gui.c main.c net_worker.c local_worker.c
+bin_PROGRAMS = isst_gtk
+isst_gtk_SOURCES = gui.c main.c net_worker.c local_worker.c
 noinst_HEADERS = isst.h
 
 AM_CFLAGS = \
