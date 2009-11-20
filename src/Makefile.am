@@ -5,16 +5,9 @@ noinst_HEADERS = isst.h
 AM_CFLAGS = \
 	@TIE_CFLAGS@ \
 	@GTK_CFLAGS@ \
-	@GLIB_CFLAGS@ \
-	@GTHREAD_CFLAGS@ \
-	@PANGO_CFLAGS@ \
 	-DPANGO_ENABLE_BACKEND \
 	-fexceptions
 
 AM_LDFLAGS = \
 	@TIE_LIBS@ \
-	@GTK_LIBS@ \
-	@GLIB_LIBS@ \
-	@GTHREAD_LIBS@ \
-	@PANGO_LIBS@ \
-	-lpthread
+	@GTK_LIBS@
