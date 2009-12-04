@@ -633,6 +633,7 @@ load_g_project_callback (const char *file, const char **region)
 	    printf("Time to load: %.2f seconds\n", (((double)ts[1].tv_sec+(double)ts[1].tv_usec/(double)1e6) - ((double)ts[0].tv_sec+(double)ts[0].tv_usec/(double)1e6)));
 
 	    isst.update_avail = 1;
+	    isst.pid = 0;	/* no project id's here, but not -1 */
     } else {
 	/*
 	   op = ADRT_NETOP_REQWID;
@@ -1076,12 +1077,9 @@ context_motion_event (GtkWidget *widget, GdkEventMotion *event)
     dx = (int16_t) (event->x - isst.mouse_x);
     dy = (int16_t) (event->y - isst.mouse_y);
 
-    printf("Gotted a meece event: %d %d\n", dx, dy);
-
     /* Do Not Generate new Frames */
     if (isst.mode == ISST_MODE_SHOTLINE)
 	update = 0;
-
 
     pthread_mutex_lock (&isst.update_mut);
     if (event->state & GDK_BUTTON1_MASK)
@@ -1756,6 +1754,7 @@ isst_init (int argc, char **argv)
 	gtk_widget_show_all (isst_window);
 	isst.update_avail = 1;
 	isst.update_idle = 1;
+	isst.pid = 0;
 	isst.work_frame ();
     }
 
