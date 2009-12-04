@@ -544,7 +544,7 @@ static void \
 	e; \
 	isst.work_frame (); \
 }
-#define VIEW_CB(n, m) VIEW_CALLBACK(n, m, 0);
+#define VIEW_CB(n, m) VIEW_CALLBACK(n, m, isst.camera_type=RENDER_CAMERA_PERSPECTIVE);
 
 VIEW_CB(view_shaded, SHADED);
 VIEW_CB(view_normal, NORMAL);
