@@ -802,6 +802,39 @@ apply_delta_callback (GtkWidget *widget, gpointer ptr)
     isst.mouse_y = celly;
 }
 
+static void
+save_shotline_callback (GtkWidget *widget, gpointer ptr)
+{
+	FILE *out;
+	char slf[BUFSIZ], buf[BUFSIZ], *shotname;
+
+	/* Create a new analysis */
+	shotname = gtk_entry_get_text (GTK_ENTRY (isst_name_entry));
+	if (strlen(shotname) == 0)
+	{ 
+		generic_dialog ("Must provide name for shotline.");
+		return;
+	}
+
+	snprintf (slf, BUFSIZ, "%s/.isst", getenv("HOME"));
+
+	if ((out = fopen(slf, "a")) == NULL) {
+		snprintf(buf, BUFSIZ, "Unable to open %s for writing", slf);
+		generic_dialog (buf);
+		return;
+	}
+
+
+	fprintf (out, "%s: %f <%f %f %f> %f-%f %fx%f)\n",
+			shotname, isst.camera_grid, V3ARGS(isst.camera_pos.v), isst.camera_az, isst.camera_el,
+			(float) gtk_spin_button_get_value (GTK_SPIN_BUTTON (isst_cellx_spin)) / (tfloat) ISST_CONTEXT_W,
+			(float) gtk_spin_button_get_value (GTK_SPIN_BUTTON (isst_celly_spin)) / (tfloat) ISST_CONTEXT_H);
+	fclose(out);
+
+	snprintf(buf, BUFSIZ, "Shotline %s saved to %s", shotname, slf);
+	generic_dialog(buf);
+	return;
+}
 
 static void prbuf(int i, unsigned char *buf) { while(i--) printf("%02X ", *buf++); }
 
@@ -1651,6 +1684,11 @@ isst_gui ()
 
 	isst_name_entry = gtk_entry_new ();
 	gtk_table_attach_defaults (GTK_TABLE (table), isst_name_entry, 1, 4, 2, 3);
+
+	/* Save Button */
+	save_button = gtk_button_new_with_label ("Save Shotline");
+	gtk_table_attach_defaults (GTK_TABLE (table), save_button, 4, 5, 2, 3);
+	g_signal_connect (G_OBJECT (save_button), "clicked", G_CALLBACK (save_shotline_callback), NULL);
 
 	/* In-Hit Info */
 	label = gtk_label_new ("In-Hit");
