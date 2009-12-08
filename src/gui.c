@@ -412,12 +412,13 @@ save_screenshot_callback (GtkWidget *widget, gpointer ptr)
     PangoLayout *layout;
     PangoLanguage *language;
     PangoFontDescription *font_desc;
-    int32_t width, height, x, y, px, py;
+    int32_t i, width, height, x, y, px, py;
     uint32_t pixel;
     char string[80];
     char overlay[256];
     char ltime[26];
     time_t timer;
+    unsigned char *buf;
 
     context = gdk_pango_context_get();
     language = gtk_get_default_language();
@@ -509,11 +510,14 @@ save_screenshot_callback (GtkWidget *widget, gpointer ptr)
 	    }
 	}
 
+    /* flip image */
+    buf = (unsigned char *)malloc(ISST_CONTEXT_W * ISST_CONTEXT_H * 3);
+    for(i=0;i<ISST_CONTEXT_H;i++) {
+        memcpy( buf + i*ISST_CONTEXT_W*3, (unsigned char *)isst.buffer_image.data + (ISST_CONTEXT_H-i)*ISST_CONTEXT_W*3, ISST_CONTEXT_W*3 );
+    }
     /* Save Image */
-    /*
-       util_image_save_ppm ((char *) selected_filename, isst.buffer_image.data, ISST_CONTEXT_W, ISST_CONTEXT_H);
-       */
-    bu_image_save( (unsigned char *)isst.buffer_image.data, ISST_CONTEXT_W, ISST_CONTEXT_H, 3, (char *)selected_filename, BU_IMAGE_AUTO);
+    bu_image_save( buf, ISST_CONTEXT_W, ISST_CONTEXT_H, 3, (char *)selected_filename, BU_IMAGE_AUTO);
+    free(buf);
     isst.work_frame ();
 
     gtk_widget_destroy (widget);
@@ -530,7 +534,7 @@ menuitem_misc_screenshot_callback ()
 
     g_signal_connect_swapped (GTK_FILE_SELECTION (file_selector)->ok_button, "clicked", G_CALLBACK (save_screenshot_callback), file_selector);
     g_signal_connect_swapped (GTK_FILE_SELECTION (file_selector)->cancel_button, "clicked", G_CALLBACK (gtk_widget_destroy), file_selector);
-    gtk_file_selection_set_filename (GTK_FILE_SELECTION (file_selector), "screenshot.ppm");
+    gtk_file_selection_set_filename (GTK_FILE_SELECTION (file_selector), "screenshot.png");
 
     gtk_widget_show_all (file_selector);
 }
