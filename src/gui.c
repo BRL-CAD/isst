@@ -1077,18 +1077,8 @@ context_motion_event (GtkWidget *widget, GdkEventMotion *event)
     {
 	if (isst.mode == ISST_MODE_SHOTLINE)
 	{
-	    if (event->x >= ISST_CONTEXT_W)
-		event->x = ISST_CONTEXT_W - 1;
-
-	    if (event->x < 0)
-		event->x = 0;
-
-	    if (event->y >= ISST_CONTEXT_H)
-		event->y = ISST_CONTEXT_H - 1;
-
-	    if (event->y < 0)
-		event->y = 0;
-
+	    CLAMP(event->x, 0, ISST_CONTEXT_W - 1);
+	    CLAMP(event->y, 0, ISST_CONTEXT_H - 1);
 	    draw_cross_hairs (event->x, event->y);
 	}
 	else
