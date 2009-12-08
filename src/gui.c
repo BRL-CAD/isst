@@ -31,7 +31,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/time.h>
 
 #undef CLAMP
 
@@ -615,22 +614,26 @@ load_g_project_callback (const char *file, const char **region)
 {
     uint8_t op;
     char buf[BUFSIZ];
-    int size, i, rval;
+    int size, i, rval, nreg = 0;
+
+    const char **r = region;
+    while(*r++) ++nreg;
 
     attach_master(&isst.master);
-    region[1] = NULL;	/* force to one region until GUI is updated. */
 
     if(isst.work_frame == isst_local_work_frame) {
-	    struct timeval ts[2];
-
+	    struct bu_vls times;
 	    GTK_WIDGET_UNSET_FLAGS (isst_container, GTK_NO_SHOW_ALL);
 	    gtk_widget_show_all (isst_window);
 	    
+	    bu_vls_init (&times);
 	    /* init/load/prep the tie engine */
-	    gettimeofday(ts, NULL);
-	    rval = load_g(tie, file, 1, region);
-	    gettimeofday(ts+1, NULL);
-	    printf("Time to load: %.2f seconds\n", (((double)ts[1].tv_sec+(double)ts[1].tv_usec/(double)1e6) - ((double)ts[0].tv_sec+(double)ts[0].tv_usec/(double)1e6)));
+	    rt_prep_timer();
+	    rval = load_g(tie, file, nreg, region);
+	    rt_get_timer(&times, NULL);
+
+	    printf("\nTime to load: %s\n\n", bu_vls_addr(&times));
+	    bu_vls_free(&times);
 
 	    isst.update_avail = 1;
 	    isst.pid = 0;	/* no project id's here, but not -1 */
@@ -806,7 +809,8 @@ static void
 save_shotline_callback (GtkWidget *widget, gpointer ptr)
 {
 	FILE *out;
-	char slf[BUFSIZ], buf[BUFSIZ], *shotname;
+	char slf[BUFSIZ], buf[BUFSIZ];
+	const char *shotname;
 
 	/* Create a new analysis */
 	shotname = gtk_entry_get_text (GTK_ENTRY (isst_name_entry));
@@ -1777,24 +1781,15 @@ isst_init (int argc, char **argv)
     /* Initialize GTK */
     gtk_init (&argc, &argv);
 
+    argv[argc] = NULL;	/* make sure there's a terminator */
+
     isst_gui ();
 
     GTK_WIDGET_UNSET_FLAGS (isst_context, GTK_DOUBLE_BUFFERED);
     gtk_widget_show_all (isst_window);
 
-    if(argc>=2) {
-	isst.update_avail = 0;
-	isst.update_idle = 0;
-	attach_master(&isst.master);
-
-	load_g(tie, *argv, argc-1, (const char **)(argv+1));
-	GTK_WIDGET_UNSET_FLAGS (isst_container, GTK_NO_SHOW_ALL);
-	gtk_widget_show_all (isst_window);
-	isst.update_avail = 1;
-	isst.update_idle = 1;
-	isst.pid = 0;
-	isst.work_frame ();
-    }
+    if(argc>=2)
+        load_g_project_callback((const char *)*argv, (const char **)argv+1);
 
     gtk_main ();
 }
