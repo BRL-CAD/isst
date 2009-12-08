@@ -373,6 +373,60 @@ isst_net_worker (gpointer moocow)
     return NULL;
 }
 
+void load_frame_attribute()
+{
+    /* frame attributes (size and format) */
+    uint32_t size;
+    uint16_t w, h, format;
+    uint8_t ind, message[256], op;
+
+    ind = 0;
+
+    w = ISST_CONTEXT_W;
+    h = ISST_CONTEXT_H;
+    format = RENDER_CAMERA_BIT_DEPTH_24;
+
+    op = ADRT_NETOP_WORK;
+    TCOPY(uint8_t, &op, 0, message, ind);
+    ind++;
+
+    size = 9; /* wid + op + w + h + format */
+    TCOPY(uint32_t, &size, 0, message, ind);
+    ind += 4;
+
+    op = ADRT_WORK_FRAME_ATTR;
+    TCOPY(uint8_t, &op, 0, message, ind);
+    ind++;
+
+    TCOPY(uint16_t, &isst.wid, 0, message, ind);
+    ind += 2;
+
+    TCOPY(uint16_t, &w, 0, message, ind);
+    ind += 2;
+    TCOPY(uint16_t, &h, 0, message, ind);
+    ind += 2;
+    TCOPY(uint16_t, &format, 0, message, ind);
+    ind += 2;
+
+    tienet_send (isst.socket, message, ind);
+
+    /* Request geometry min and max */
+    op = ADRT_NETOP_WORK;
+    tienet_send (isst.socket, &op, 1);
+
+    /* size */
+    size = 3;
+    tienet_send (isst.socket, &size, 4);
+
+    op = ADRT_WORK_MINMAX;
+    tienet_send (isst.socket, &op, 1);
+
+    /* workspace id */
+    tienet_send (isst.socket, &isst.wid, 2);
+}
+
+
+
 /*
  * Local Variables:
  * mode: C
