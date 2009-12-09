@@ -87,7 +87,7 @@ isst_local_worker (gpointer moocow) {
 		    break;
 		case ISST_MODE_CUT:
 		    VMOVE(isst.shotline_pos.v, isst.camera_pos.v);
-		    VSUB2(isst.shotline_dir.v, isst.camera_pos.v, isst.camera_foc.v);
+		    VSUB2(isst.shotline_dir.v, isst.camera_foc.v, isst.camera_pos.v);
 		    snprintf(buf, BUFSIZ, "#(%f %f %f) #(%f %f %f)", V3ARGS(isst.shotline_pos.v), V3ARGS(isst.shotline_dir.v));
 		    printf("%.2f %.2f %.2f -> %.2f %.2f %.2f\n", V3ARGS(isst.shotline_pos.v), V3ARGS(isst.shotline_dir.v));
 		    render_cut_init(&camera.render, buf);
