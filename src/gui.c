@@ -96,6 +96,8 @@ GtkListStore *isst_shotline_store;
 uint8_t isst_flags;
 isst_t isst;
 
+char filename[BUFSIZ];	/* the .g we loaded up */
+
 /* Update the camera data based on the current azimuth and elevation */
 #define AZEL_TO_FOC() { \
     V3DIR_FROM_AZEL( isst.camera_foc.v, isst.camera_az * DEG2RAD, isst.camera_el * DEG2RAD ); \
@@ -575,6 +577,7 @@ load_g_project_callback (const char *file, const char **region)
 
     attach_master(&isst.master);
 
+    snprintf(filename, BUFSIZ, "%s", file);
     if(isst.work_frame == isst_local_work_frame) {
 	    struct bu_vls times;
 	    GTK_WIDGET_UNSET_FLAGS (isst_container, GTK_NO_SHOW_ALL);
@@ -763,7 +766,7 @@ static void
 save_shotline_callback (GtkWidget *widget, gpointer ptr)
 {
 	FILE *out;
-	char slf[BUFSIZ], buf[BUFSIZ];
+	char slf[BUFSIZ], buf[BUFSIZ], hn[BUFSIZ];
 	const char *shotname;
 
 	/* Create a new analysis */
@@ -782,9 +785,11 @@ save_shotline_callback (GtkWidget *widget, gpointer ptr)
 		return;
 	}
 
+	if(!gethostname(hn, BUFSIZ))
+		snprintf(hn, BUFSIZ, "unknown");
 
-	fprintf (out, "%s: %f <%f %f %f> %f-%f %fx%f)\n",
-			shotname, isst.camera_grid, V3ARGS(isst.camera_pos.v), isst.camera_az, isst.camera_el,
+	fprintf (out, "S %s: \"%s:%s\" %f <%f %f %f> %f-%f %fx%f)\n",
+			shotname, hn, filename, isst.camera_grid, V3ARGS(isst.camera_pos.v), isst.camera_az, isst.camera_el,
 			(float) gtk_spin_button_get_value (GTK_SPIN_BUTTON (isst_cellx_spin)) / (tfloat) ISST_CONTEXT_W,
 			(float) gtk_spin_button_get_value (GTK_SPIN_BUTTON (isst_celly_spin)) / (tfloat) ISST_CONTEXT_H);
 	fclose(out);
@@ -1732,8 +1737,10 @@ isst_init (int argc, char **argv)
     GTK_WIDGET_UNSET_FLAGS (isst_context, GTK_DOUBLE_BUFFERED);
     gtk_widget_show_all (isst_window);
 
-    if(argc>=2)
+    if(argc>=2) {
+	snprintf(filename, BUFSIZ, "%s", *argv);
         load_g_project_callback((const char *)*argv, (const char **)argv+1);
+    }
 
     gtk_main ();
 }
