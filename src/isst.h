@@ -73,6 +73,7 @@ typedef struct isst_s
     uint16_t endian;
     uint8_t mode;
     uint8_t mode_updated;
+    int context_width, context_height;
 
     /* geometry */
     TIE_3 geom_min;

@@ -44,7 +44,6 @@
 #include "isst.h"
 
 extern GtkWidget *isst_window;
-extern GtkWidget *isst_container;
 extern GtkWidget *isst_context;
 
 /* Navigation */
@@ -219,7 +218,6 @@ isst_net_worker (gpointer moocow)
     }
 
     /* Now that a connection is established, show the fixed container */
-    GTK_WIDGET_UNSET_FLAGS (isst_container, GTK_NO_SHOW_ALL);
     gtk_widget_show_all (isst_window);
 
     addrlen = sizeof (srv_addr);

@@ -43,20 +43,13 @@ isst_local_work_frame() {
 
 gpointer
 isst_local_worker (gpointer moocow) {
-    int oldmode = -1, meh = 0;
+    int oldmode = -1, meh = 0, origh = -1, origw = -1;
     double mehd = 0;
     struct render_camera_s camera;
     struct camera_tile_s tile;
     struct timeval ts[2];
 
     render_camera_init(&camera, bu_avail_cpus());
-    camera.w = ISST_CONTEXT_W;
-    camera.h = ISST_CONTEXT_H;
-    tile.orig_x = 0;
-    tile.orig_y = 0;
-    tile.size_x = ISST_CONTEXT_W;
-    tile.size_y = ISST_CONTEXT_H;
-    tile.format = RENDER_CAMERA_BIT_DEPTH_24;
 
     while(1) {
 
@@ -64,6 +57,17 @@ isst_local_worker (gpointer moocow) {
 	if(!isst.update_avail) {
 	    usleep(100);
 	    continue;
+	}
+
+	/* resize event, reset rendering info */
+	if(origw != isst.context_width || origh != isst.context_height) {
+	    camera.w = isst.context_width;
+	    camera.h = isst.context_height;
+	    tile.orig_x = 0;
+	    tile.orig_y = 0;
+	    origw = tile.size_x = isst.context_width;
+	    origh = tile.size_y = isst.context_height;
+	    tile.format = RENDER_CAMERA_BIT_DEPTH_24;
 	}
 
 	isst.update_avail = 0;
@@ -114,6 +118,7 @@ isst_local_worker (gpointer moocow) {
 	/* pump tie_work and display the result. */
 	gettimeofday(ts, NULL);
 	render_camera_render(&camera, tie, &tile, &isst.buffer_image);
+#if 0
 	gettimeofday(ts+1, NULL);
 	++meh;
 	mehd += (((double)ts[1].tv_sec+(double)ts[1].tv_usec/(double)1e6) - ((double)ts[0].tv_sec+(double)ts[0].tv_usec/(double)1e6));
@@ -123,6 +128,7 @@ isst_local_worker (gpointer moocow) {
 	    meh = 0;
 	    mehd = 0;
 	}
+#endif
 
 	/* shove results into the gdk canvas */
 	paint_context();

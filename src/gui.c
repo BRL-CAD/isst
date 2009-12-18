@@ -64,7 +64,6 @@ char *strnstr(const char *s1, const char *s2, size_t n) { return strstr(s1, s2);
 GtkWidget *isst_window = NULL;
 GtkUIManager *isst_ui_manager;
 GtkWidget *isst_notebook;
-GtkWidget *isst_container;
 GtkWidget *isst_context;
 
 
@@ -128,8 +127,8 @@ paint_context()
     /* probably manipulate the image buffer to add the crosshairs? then do away
      * with draw_cross_hairs ? */
     gdk_draw_rgb_image (isst_context->window, isst_context->style->fg_gc[GTK_STATE_NORMAL],
-	    0, 0, ISST_CONTEXT_W, ISST_CONTEXT_H, GDK_RGB_DITHER_NONE,
-	    isst.buffer_image.data, ISST_CONTEXT_W * 3);
+	    0, 0, isst.context_width, isst.context_height, GDK_RGB_DITHER_NONE,
+	    isst.buffer_image.data, isst.context_width * 3);
     if (isst.mode == ISST_MODE_SHOTLINE)
 	draw_cross_hairs (isst.mouse_x, isst.mouse_y);
     gdk_window_thaw_updates ( GDK_WINDOW(isst_context->window) );
@@ -153,7 +152,7 @@ isst_project_widgets ()
 void
 draw_cross_hairs (int16_t x, int16_t y)
 {
-    uint8_t line[3*ISST_CONTEXT_W];
+    uint8_t line[3*isst.context_width];
     int i;
     uint8_t *p;
 
@@ -169,30 +168,30 @@ draw_cross_hairs (int16_t x, int16_t y)
     /* Restore previous scanlines */
 
     /* Horizontal */
-    p = &((uint8_t *) isst.buffer_image.data)[3 * (isst.mouse_y * ISST_CONTEXT_W) + 0];
-    for (i = 0; i < ISST_CONTEXT_W; i++)
+    p = &((uint8_t *) isst.buffer_image.data)[3 * (isst.mouse_y * isst.context_width) + 0];
+    for (i = 0; i < isst.context_width; i++)
     {
 	line[3*i+0] = *(p++);
 	line[3*i+1] = *(p++);
 	line[3*i+2] = *(p++);
     }
     gdk_draw_rgb_image (isst_context->window, isst_context->style->fg_gc[GTK_STATE_NORMAL],
-	    0, isst.mouse_y, ISST_CONTEXT_W, 1, GDK_RGB_DITHER_NONE, line, 3 * ISST_CONTEXT_W);
+	    0, isst.mouse_y, isst.context_width, 1, GDK_RGB_DITHER_NONE, line, 3 * isst.context_width);
 
     /* Vertical */
     p = &((uint8_t *)isst.buffer_image.data)[3 * isst.mouse_x];
-    for (i = 0; i < ISST_CONTEXT_H; i++)
+    for (i = 0; i < isst.context_height; i++)
     {
 	line[3*i+0] = *(p+0);
 	line[3*i+1] = *(p+1);
 	line[3*i+2] = *(p+2);
-	p += 3*ISST_CONTEXT_W;
+	p += 3*isst.context_width;
     }
     gdk_draw_rgb_image (isst_context->window, isst_context->style->fg_gc[GTK_STATE_NORMAL],
-	    isst.mouse_x, 0, 1, ISST_CONTEXT_H, GDK_RGB_DITHER_NONE, line, 3);
+	    isst.mouse_x, 0, 1, isst.context_height, GDK_RGB_DITHER_NONE, line, 3);
 
 
-    for (i = 0; i < ISST_CONTEXT_W; i++)
+    for (i = 0; i < isst.context_width; i++)
     {
 	line[3*i+0] = 0;
 	line[3*i+1] = 255;
@@ -201,11 +200,11 @@ draw_cross_hairs (int16_t x, int16_t y)
 
     /* Horizontal Line */
     gdk_draw_rgb_image (isst_context->window, isst_context->style->fg_gc[GTK_STATE_NORMAL], 
-	    0, y, ISST_CONTEXT_W, 1, GDK_RGB_DITHER_NONE, line, 3 * ISST_CONTEXT_W);
+	    0, y, isst.context_width, 1, GDK_RGB_DITHER_NONE, line, 3 * isst.context_width);
 
     /* Vertical Line */
     gdk_draw_rgb_image (isst_context->window, isst_context->style->fg_gc[GTK_STATE_NORMAL], 
-	    x, 0, 1, ISST_CONTEXT_H, GDK_RGB_DITHER_NONE, line, 3);
+	    x, 0, 1, isst.context_height, GDK_RGB_DITHER_NONE, line, 3);
 
     gdk_window_thaw_updates ( GDK_WINDOW(isst_context->window) );
     /*
@@ -448,7 +447,7 @@ save_screenshot_callback (GtkWidget *widget, gpointer ptr)
     sprintf (string, "az: %.3f, el: %.3f (deg)\n", isst.camera_az, isst.camera_el);
     strcat (overlay, string);
 
-    sprintf (string, "grid: %.2fm x %.2fm\n", isst.camera_grid, ((float) ISST_CONTEXT_H) / ((float) ISST_CONTEXT_W) * isst.camera_grid);
+    sprintf (string, "grid: %.2fm x %.2fm\n", isst.camera_grid, ((float) isst.context_height) / ((float) isst.context_width) * isst.camera_grid);
     strcat (overlay, string);
 
     sprintf (string, "in-hit: %s (m)", gtk_entry_get_text (GTK_ENTRY (isst_inhit_entry)));
@@ -483,9 +482,9 @@ save_screenshot_callback (GtkWidget *widget, gpointer ptr)
 	    pixel = gdk_image_get_pixel (image, x, y);
 	    if (x == 0 || y == 0 || x == width-1 || y == height-1)
 		pixel = 0xffffffff;
-	    isst.buffer_image.data[3 * (y * ISST_CONTEXT_W + x) + 0] = (pixel & 0x000000ff)>>0;
-	    isst.buffer_image.data[3 * (y * ISST_CONTEXT_W + x) + 1] = (pixel & 0x0000ff00)>>8;
-	    isst.buffer_image.data[3 * (y * ISST_CONTEXT_W + x) + 2] = (pixel & 0x00ff0000)>>16;
+	    isst.buffer_image.data[3 * (y * isst.context_width + x) + 0] = (pixel & 0x000000ff)>>0;
+	    isst.buffer_image.data[3 * (y * isst.context_width + x) + 1] = (pixel & 0x0000ff00)>>8;
+	    isst.buffer_image.data[3 * (y * isst.context_width + x) + 2] = (pixel & 0x00ff0000)>>16;
 	}
 
     px = (int) gtk_spin_button_get_value (GTK_SPIN_BUTTON (isst_cellx_spin));
@@ -495,30 +494,30 @@ save_screenshot_callback (GtkWidget *widget, gpointer ptr)
     for (y = py - 20; y <= py + 20; y++)
 	for (x = px - 20; x <= px + 20; x++)
 	{
-	    if (x >= 0 && x < ISST_CONTEXT_W && y >= 0 && y < ISST_CONTEXT_H)
+	    if (x >= 0 && x < isst.context_width && y >= 0 && y < isst.context_height)
 	    {
 		if (y == py || x == px)
 		{
-		    isst.buffer_image.data[3 * (y * ISST_CONTEXT_W + x) + 0] = 0;
-		    isst.buffer_image.data[3 * (y * ISST_CONTEXT_W + x) + 1] = 255;
-		    isst.buffer_image.data[3 * (y * ISST_CONTEXT_W + x) + 2] = 0;
+		    isst.buffer_image.data[3 * (y * isst.context_width + x) + 0] = 0;
+		    isst.buffer_image.data[3 * (y * isst.context_width + x) + 1] = 255;
+		    isst.buffer_image.data[3 * (y * isst.context_width + x) + 2] = 0;
 		}
 		if ((x-px)*(x-px) + (y-py)*(y-py) <= 9)
 		{
-		    isst.buffer_image.data[3 * (y * ISST_CONTEXT_W + x) + 0] = 255;
-		    isst.buffer_image.data[3 * (y * ISST_CONTEXT_W + x) + 1] = 0;
-		    isst.buffer_image.data[3 * (y * ISST_CONTEXT_W + x) + 2] = 162;
+		    isst.buffer_image.data[3 * (y * isst.context_width + x) + 0] = 255;
+		    isst.buffer_image.data[3 * (y * isst.context_width + x) + 1] = 0;
+		    isst.buffer_image.data[3 * (y * isst.context_width + x) + 2] = 162;
 		}
 	    }
 	}
 
     /* flip image */
-    buf = (unsigned char *)malloc(ISST_CONTEXT_W * ISST_CONTEXT_H * 3);
-    for(i=0;i<ISST_CONTEXT_H;i++) {
-        memcpy( buf + i*ISST_CONTEXT_W*3, (unsigned char *)isst.buffer_image.data + (ISST_CONTEXT_H-i)*ISST_CONTEXT_W*3, ISST_CONTEXT_W*3 );
+    buf = (unsigned char *)malloc(isst.context_width * isst.context_height * 3);
+    for(i=0;i<isst.context_height;i++) {
+        memcpy( buf + i*isst.context_width*3, (unsigned char *)isst.buffer_image.data + (isst.context_height-i)*isst.context_width*3, isst.context_width*3 );
     }
     /* Save Image */
-    bu_image_save( buf, ISST_CONTEXT_W, ISST_CONTEXT_H, 3, (char *)selected_filename, BU_IMAGE_AUTO);
+    bu_image_save( buf, isst.context_width, isst.context_height, 3, (char *)selected_filename, BU_IMAGE_AUTO);
     free(buf);
     isst.work_frame ();
 
@@ -580,7 +579,6 @@ load_g_project_callback (const char *file, const char **region)
     snprintf(filename, BUFSIZ, "%s", file);
     if(isst.work_frame == isst_local_work_frame) {
 	    struct bu_vls times;
-	    GTK_WIDGET_UNSET_FLAGS (isst_container, GTK_NO_SHOW_ALL);
 	    gtk_widget_show_all (isst_window);
 	    
 	    bu_vls_init (&times);
@@ -745,8 +743,8 @@ apply_delta_callback (GtkWidget *widget, gpointer ptr)
     cellx = (int16_t) gtk_spin_button_get_value (GTK_SPIN_BUTTON (isst_cellx_spin));
     celly = (int16_t) gtk_spin_button_get_value (GTK_SPIN_BUTTON (isst_celly_spin));
 
-    gtk_spin_button_set_value (GTK_SPIN_BUTTON (isst_cellx_spin), cellx + (((tfloat) deltax) / ((tfloat) 1000*isst.camera_grid)) * (tfloat) ISST_CONTEXT_W);
-    gtk_spin_button_set_value (GTK_SPIN_BUTTON (isst_celly_spin), celly - (((tfloat) deltay) / ((tfloat) 1000*isst.camera_grid)) * (tfloat) ISST_CONTEXT_H);
+    gtk_spin_button_set_value (GTK_SPIN_BUTTON (isst_cellx_spin), cellx + (((tfloat) deltax) / ((tfloat) 1000*isst.camera_grid)) * (tfloat) isst.context_width);
+    gtk_spin_button_set_value (GTK_SPIN_BUTTON (isst_celly_spin), celly - (((tfloat) deltay) / ((tfloat) 1000*isst.camera_grid)) * (tfloat) isst.context_height);
 
     gtk_spin_button_set_value (GTK_SPIN_BUTTON (isst_deltax_spin), 0);
     gtk_spin_button_set_value (GTK_SPIN_BUTTON (isst_deltay_spin), 0);	
@@ -790,8 +788,8 @@ save_shotline_callback (GtkWidget *widget, gpointer ptr)
 
 	fprintf (out, "S %s: \"%s:%s\" %f <%f %f %f> %f-%f %fx%f)\n",
 			shotname, hn, filename, isst.camera_grid, V3ARGS(isst.camera_pos.v), isst.camera_az, isst.camera_el,
-			(float) gtk_spin_button_get_value (GTK_SPIN_BUTTON (isst_cellx_spin)) / (tfloat) ISST_CONTEXT_W,
-			(float) gtk_spin_button_get_value (GTK_SPIN_BUTTON (isst_celly_spin)) / (tfloat) ISST_CONTEXT_H);
+			(float) gtk_spin_button_get_value (GTK_SPIN_BUTTON (isst_cellx_spin)) / (tfloat) isst.context_width,
+			(float) gtk_spin_button_get_value (GTK_SPIN_BUTTON (isst_celly_spin)) / (tfloat) isst.context_height);
 	fclose(out);
 
 	snprintf(buf, BUFSIZ, "Shotline %s saved to %s", shotname, slf);
@@ -910,8 +908,8 @@ fire_shotline_callback (GtkWidget *widget, gpointer ptr)
 
     /* Calculate Position and Direction of ray for shotline based on Cell coordinates */
     render_camera_init (&camera, 1);
-    camera.w = ISST_CONTEXT_W;
-    camera.h = ISST_CONTEXT_H;
+    camera.w = isst.context_width;
+    camera.h = isst.context_height;
     camera.type = RENDER_CAMERA_ORTHOGRAPHIC;
     camera.pos = isst.camera_pos;
     camera.focus = isst.camera_foc;
@@ -1015,11 +1013,24 @@ update_camera_widgets ()
 
 
 static gboolean
+context_resize_event (GtkWidget *widget, GdkEvent *event)
+{
+	printf("Resize!\n");
+	return TRUE;
+}
+
+static gboolean
 context_expose_event (GtkWidget *widget, GdkEventExpose *event)
 {
+    if(widget->allocation.width != isst.context_width || widget->allocation.height != isst.context_height) {
+	isst.context_width = widget->allocation.width;
+	isst.context_height = widget->allocation.height;
+	TIENET_BUFFER_SIZE(isst.buffer_image, 3 * isst.context_width * isst.context_height);
+	isst.update_avail = 1;
+    }
     gdk_draw_rgb_image (widget->window, widget->style->fg_gc[GTK_STATE_NORMAL],
-	    0, 0, ISST_CONTEXT_W, ISST_CONTEXT_H, GDK_RGB_DITHER_NONE,
-	    isst.buffer_image.data, ISST_CONTEXT_W * 3);
+	    0, 0, isst.context_width, isst.context_height, GDK_RGB_DITHER_NONE,
+	    isst.buffer_image.data, isst.context_width * 3);
 
     /* Draw cross hairs if in shotline mode */
     if (isst.mode == ISST_MODE_SHOTLINE)
@@ -1082,8 +1093,8 @@ context_motion_event (GtkWidget *widget, GdkEventMotion *event)
     {
 	if (isst.mode == ISST_MODE_SHOTLINE)
 	{
-	    CLAMP(event->x, 0, ISST_CONTEXT_W - 1);
-	    CLAMP(event->y, 0, ISST_CONTEXT_H - 1);
+	    CLAMP(event->x, 0, isst.context_width - 1);
+	    CLAMP(event->y, 0, isst.context_height - 1);
 	    draw_cross_hairs (event->x, event->y);
 	}
 	else
@@ -1260,13 +1271,11 @@ build_menubar (GtkWidget *window)
 void
 isst_gui ()
 {
-    GtkWidget *main_vbox;
-    GtkWidget *menu_bar;
+    GtkWidget *main_vbox, *menu_bar, *hp, *vp;
 
     /* Create the window */
     isst_window = gtk_window_new (GTK_WINDOW_TOPLEVEL);
     gtk_widget_set_size_request (GTK_WIDGET (isst_window), ISST_WINDOW_W, ISST_WINDOW_H);
-    gtk_window_set_resizable (GTK_WINDOW (isst_window), FALSE);
     gtk_window_set_title (GTK_WINDOW (isst_window), "ISST-isst-GTK");
     g_signal_connect (G_OBJECT (isst_window), "destroy", G_CALLBACK (destroy), NULL);
 
@@ -1280,18 +1289,21 @@ isst_gui ()
     gtk_box_pack_start (GTK_BOX (main_vbox), menu_bar, FALSE, FALSE, 0);
     isst_project_widgets ();
 
-    /* Create a fixed container to place panels on */
-    isst_container = gtk_fixed_new ();
-    gtk_box_pack_end (GTK_BOX (main_vbox), isst_container, TRUE, TRUE, 0);
+    hp = gtk_hpaned_new();
+    gtk_box_pack_end (GTK_BOX (main_vbox), hp, TRUE, TRUE, 0);
+
+    vp = gtk_vpaned_new();
+    gtk_paned_add2(GTK_PANED(hp), GTK_WIDGET(vp));
 
     /* Create the rendering context */
     isst_context = gtk_drawing_area_new ();
-    gtk_widget_set_size_request (GTK_WIDGET (isst_context), ISST_CONTEXT_W, ISST_CONTEXT_H);
-    gtk_fixed_put (GTK_FIXED (isst_container), isst_context, ISST_WINDOW_W - ISST_CONTEXT_W, 0);
+    gtk_widget_set_size_request (GTK_WIDGET (isst_context), isst.context_width, isst.context_height);
+    gtk_paned_add1(GTK_PANED(vp), GTK_WIDGET(isst_context));
 
     /* Signals for drawing pixmap */
     g_signal_connect (G_OBJECT (isst_context), "configure_event", G_CALLBACK (context_configure_event), NULL);
     g_signal_connect (G_OBJECT (isst_context), "expose_event", G_CALLBACK (context_expose_event), NULL);
+    g_signal_connect (G_OBJECT (isst_context), "resize_event", G_CALLBACK (context_resize_event), NULL);
 
     /* Event signals */
     g_signal_connect (G_OBJECT (isst_context), "button_press_event", G_CALLBACK (context_button_event), NULL);
@@ -1305,7 +1317,7 @@ isst_gui ()
 	    | GDK_POINTER_MOTION_MASK);
 
 
-    {
+    {	/*** the shotline info (bottom) ***/
 	GtkCellRenderer *renderer;
 	GtkTreeViewColumn *column;
 	GtkWidget *sw;
@@ -1316,9 +1328,9 @@ isst_gui ()
 	sw = gtk_scrolled_window_new (NULL, NULL);
 	gtk_scrolled_window_set_shadow_type (GTK_SCROLLED_WINDOW (sw), GTK_SHADOW_ETCHED_IN);
 	gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (sw), GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
-	gtk_fixed_put (GTK_FIXED (isst_container), sw, ISST_WINDOW_W-ISST_CONTEXT_W, ISST_CONTEXT_H);
+        gtk_paned_add2(GTK_PANED(vp), GTK_WIDGET(sw));
 	/* Make room for horizontal scroll bar */
-	gtk_widget_set_size_request (GTK_WIDGET (sw), ISST_CONTEXT_W, ISST_WINDOW_H-ISST_CONTEXT_H - 28);
+	gtk_widget_set_size_request (GTK_WIDGET (sw), isst.context_width, ISST_WINDOW_H-isst.context_height - 28);
 
 	/* create the project table */
 	isst_shotline_store = gtk_list_store_new (3, G_TYPE_UINT, G_TYPE_STRING, G_TYPE_STRING);
@@ -1350,11 +1362,11 @@ isst_gui ()
 	gtk_tree_view_append_column (GTK_TREE_VIEW (treeview), column);
     }
 
-
+	/*** the left chunk ***/
     /* Create the notebook to contain widgets for each mode */
     isst_notebook = gtk_notebook_new ();
-    gtk_widget_set_size_request (GTK_WIDGET (isst_notebook), ISST_WINDOW_W - ISST_CONTEXT_W, ISST_WINDOW_H);
-    gtk_fixed_put (GTK_FIXED (isst_container), isst_notebook, 0, 0);
+    gtk_widget_set_size_request (GTK_WIDGET (isst_notebook), ISST_WINDOW_W - isst.context_width, ISST_WINDOW_H);
+    gtk_paned_add1(GTK_PANED(hp), GTK_WIDGET(isst_notebook));
     gtk_notebook_set_show_tabs (GTK_NOTEBOOK (isst_notebook), 0);
 
     {
@@ -1594,7 +1606,7 @@ isst_gui ()
 	label = gtk_label_new ("Cell X");
 	gtk_table_attach_defaults (GTK_TABLE (table), label, 0, 1, 0, 1);
 
-	isst_cellx_spin = gtk_spin_button_new_with_range (0, ISST_CONTEXT_W, 1);
+	isst_cellx_spin = gtk_spin_button_new_with_range (0, isst.context_width, 1);
 	gtk_table_attach_defaults (GTK_TABLE (table), isst_cellx_spin, 1, 2, 0, 1);
 	gtk_spin_button_set_digits (GTK_SPIN_BUTTON (isst_cellx_spin), 0);
 	g_signal_connect (G_OBJECT (isst_cellx_spin), "value-changed", G_CALLBACK (update_cellx_callback), NULL);
@@ -1603,7 +1615,7 @@ isst_gui ()
 	label = gtk_label_new ("Cell Y");
 	gtk_table_attach_defaults (GTK_TABLE (table), label, 2, 3, 0, 1);
 
-	isst_celly_spin = gtk_spin_button_new_with_range (0, ISST_CONTEXT_H, 1);
+	isst_celly_spin = gtk_spin_button_new_with_range (0, isst.context_height, 1);
 	gtk_table_attach_defaults (GTK_TABLE (table), isst_celly_spin, 3, 4, 0, 1);
 	gtk_spin_button_set_digits (GTK_SPIN_BUTTON (isst_celly_spin), 0);
 	g_signal_connect (G_OBJECT (isst_celly_spin), "value-changed", G_CALLBACK (update_celly_callback), NULL);
@@ -1657,10 +1669,6 @@ isst_gui ()
 	g_signal_connect (G_OBJECT (fire_button), "clicked", G_CALLBACK (fire_shotline_callback), NULL);
     }
 
-
-    /* Set the fixed container to invisible until connected */
-    GTK_WIDGET_SET_FLAGS (isst_container, GTK_NO_SHOW_ALL);
-
     /* Display everything and enter the event loop */
     gtk_widget_show_all (isst_window);
 }
@@ -1684,6 +1692,8 @@ isst_setup ()
     isst.connected = 0;
 
     /* Camera Info */
+    isst.context_width = ISST_CONTEXT_W;
+    isst.context_height = ISST_CONTEXT_H;
     VSET(isst.camera_pos.v,  10,  10,  10);
     isst.camera_az = 45;
     isst.camera_el = 35;
@@ -1696,8 +1706,7 @@ isst_setup ()
     TIENET_BUFFER_INIT(isst.buffer);
     TIENET_BUFFER_INIT(isst.buffer_comp);
     TIENET_BUFFER_INIT(isst.buffer_image);
-    TIENET_BUFFER_SIZE(isst.buffer_image, 3 * ISST_CONTEXT_W * ISST_CONTEXT_H);
-    memset (isst.buffer_image.data, 0, 3 * ISST_CONTEXT_W * ISST_CONTEXT_H);
+    TIENET_BUFFER_SIZE(isst.buffer_image, 3 * isst.context_width * isst.context_height);
 
     /* Input */
     isst.mouse_speed = 0.02;
