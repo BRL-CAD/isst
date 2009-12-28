@@ -1013,13 +1013,6 @@ update_camera_widgets ()
 
 
 static gboolean
-context_resize_event (GtkWidget *widget, GdkEvent *event)
-{
-	printf("Resize!\n");
-	return TRUE;
-}
-
-static gboolean
 context_expose_event (GtkWidget *widget, GdkEventExpose *event)
 {
     if(widget->allocation.width != isst.context_width || widget->allocation.height != isst.context_height) {
@@ -1303,7 +1296,6 @@ isst_gui ()
     /* Signals for drawing pixmap */
     g_signal_connect (G_OBJECT (isst_context), "configure_event", G_CALLBACK (context_configure_event), NULL);
     g_signal_connect (G_OBJECT (isst_context), "expose_event", G_CALLBACK (context_expose_event), NULL);
-    g_signal_connect (G_OBJECT (isst_context), "resize_event", G_CALLBACK (context_resize_event), NULL);
 
     /* Event signals */
     g_signal_connect (G_OBJECT (isst_context), "button_press_event", G_CALLBACK (context_button_event), NULL);
