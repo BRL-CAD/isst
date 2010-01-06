@@ -44,6 +44,7 @@
 #include <zlib.h>
 #endif
 
+#include <stdint.h>
 #include "tie/tie.h"
 #include "tie/camera.h"
 

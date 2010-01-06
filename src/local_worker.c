@@ -26,6 +26,8 @@
 
 #include <pthread.h>
 
+#include <stdint.h>
+
 #include "tie/tie.h"
 #include "tie/adrt.h"
 #include "tie/adrt_struct.h"
