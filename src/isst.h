@@ -125,8 +125,6 @@ void isst_azel_to_foc ();
 void isst_free();
 void isst_azel_to_foc();
 
-int load_g(tie_t *, const char *dbfile, int argc, const char **argv);
-
 void isst_net_work_frame();
 gpointer isst_net_worker (gpointer moocow);
 

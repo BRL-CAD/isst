@@ -585,7 +585,7 @@ load_g_project_callback (const char *file, const char **region)
 	    bu_vls_init (&times);
 	    /* init/load/prep the tie engine */
 	    rt_prep_timer();
-	    rval = load_g(tie, file, nreg, region);
+	    rval = load_g(tie, file, nreg, region, &(isst.meshes));
 	    rt_get_timer(&times, NULL);
 
 	    printf("\nTime to load: %s\n\n", bu_vls_addr(&times));
