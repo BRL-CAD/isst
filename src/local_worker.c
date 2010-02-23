@@ -24,6 +24,8 @@
  *
  */
 
+#include "isst_config.h"
+
 #include <pthread.h>
 
 #include <stdint.h>

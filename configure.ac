@@ -10,6 +10,8 @@ AC_PROG_LIBTOOL
 
 AC_LONG_64_BITS
 
+AC_CHECK_TYPE([ssize_t], [AC_DEFINE([HAVE_SSIZE_T], [1], [Define to 1 if 'ssize_t' is available.])], [], [])
+
 ##
 ## GTK
 HAVE_GTK2=no

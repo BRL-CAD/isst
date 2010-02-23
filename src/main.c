@@ -24,6 +24,7 @@
  *
  */
 
+#include "isst_config.h"
 
 #include <stdio.h>
 #include <stdlib.h>
