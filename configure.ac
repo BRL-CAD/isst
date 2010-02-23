@@ -10,7 +10,6 @@ AC_PROG_LIBTOOL
 
 AC_LONG_64_BITS
 
-AC_CHECK_TYPES([ssize_t])
 
 ##
 ## GTK
