@@ -580,6 +580,8 @@ load_g_project_callback (const char *file, const char **region)
     snprintf(filename, BUFSIZ, "%s", file);
     if(isst.work_frame == isst_local_work_frame) {
 	    struct bu_vls times;
+	    vect_t max;
+
 	    gtk_widget_show_all (isst_window);
 	    
 	    bu_vls_init (&times);
@@ -593,6 +595,25 @@ load_g_project_callback (const char *file, const char **region)
 
 	    isst.update_avail = 1;
 	    isst.pid = 0;	/* no project id's here, but not -1 */
+
+	    VMOVE(isst.geom_min.v, tie->min.v);
+	    VMOVE(isst.geom_max.v, tie->max.v);
+	    VADD2(isst.geom_center.v,  isst.geom_min.v,  isst.geom_max.v);
+	    VSCALE(isst.geom_center.v,  isst.geom_center.v,  0.5);
+
+#if 1
+	    VSUB2(max, isst.geom_max.v, isst.geom_min.v);
+	    printf("%g %g %g\n", V3ARGS(max));
+	    max[X] = max[X] / 2.0;
+	    max[Y] = max[Y] / 2.0;
+	    max[Z] = max[Z] / 2.0;
+	    printf("%g %g %g\n", V3ARGS(max));
+#else
+	    VSUB2SCALE(max, isst.geom_max.v, isst.geom_min.v, 0.5);
+#endif
+
+	    isst.geom_radius = MAGNITUDE(max);
+	    printf("%g [%g %g %g] radius, %g %g %g - %g %g %g (%g %g %g)\n", isst.geom_radius, V3ARGS(max), V3ARGS(isst.geom_min.v), V3ARGS(isst.geom_max.v), V3ARGS(isst.geom_center.v));
     } else {
 	/*
 	   op = ADRT_NETOP_REQWID;
