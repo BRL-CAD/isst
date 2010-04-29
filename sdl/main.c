@@ -27,9 +27,40 @@
 
 int main(int argc, char **argv)
 {
+    SDL_Surface *screen;
+    SDL_Event e;
+
     SDL_Init (SDL_INIT_VIDEO | SDL_INIT_TIMER);
     atexit (SDL_Quit);
-    return 0;
+
+    /* can we make this resizable? */
+    screen = SDL_SetVideoMode (800, 600, 24, SDL_DOUBLEBUF);
+
+    /* TODO: some stuff to load up geometry and set up the isst buffers */
+
+    /* main event loop */
+    while (1)
+    {   
+	/* TODO: ask libtie/librender to fill the isst buffer */
+	/* TODO: copy/blit the isst buffer into the sdl screen */
+	SDL_UpdateRect(screen, 0, 0, 0, 0);
+	SDL_WaitEvent (&e);
+	switch (e.type)
+	{
+	    case SDL_KEYDOWN:
+		switch (tolower (e.key.keysym.sym))
+		{
+		    case 'x':
+		    case 'q':
+		    case SDLK_ESCAPE:
+			SDL_Quit ();
+			return EXIT_SUCCESS;
+			break;
+			/* TODO: more keys for nifty things like changing mode or pulling up gui bits or something */
+		}
+		/* TODO: look for mouse events */
+	}
+    }
 }
 
 /*
