@@ -55,7 +55,7 @@ TIE_LIBS="$BRLCAD_LIBS -ltie -lrender"
 AC_SUBST(TIE_CFLAGS)
 AC_SUBST(TIE_LIBS)
 
-AC_CONFIG_FILES([Makefile src/Makefile utils/Makefile])
+AC_CONFIG_FILES([Makefile src/Makefile])
 AC_OUTPUT
 
 echo "I can has GTK+? ${HAVE_GTK2}"

@@ -1,2 +1,2 @@
-SUBDIRS=src utils
+SUBDIRS=src
 EXTRA_DIST=TODO
