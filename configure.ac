@@ -24,6 +24,17 @@ AM_PATH_GTK_2_0(2.6.0,[
 AC_SUBST(GTK_CFLAGS)
 AC_SUBST(GTK_LIBS)
 
+##
+## SDL
+AC_PATH_XTRA
+HAVE_SDL=no
+AM_PATH_SDL(1.2.0,HAVE_SDL=yes,)
+
+if test "x$HAVE_GTK2" = xno && "xHAVE_SDL" = xno
+then
+	AC_MSG_ERROR(["Requires either GTK+-2.0 or SDL 1.2+"])
+fi
+
 AC_MSG_CHECKING(whether to compile for debugging)
 want_debug=no
 AC_ARG_ENABLE(debug,
@@ -55,7 +66,8 @@ TIE_LIBS="$BRLCAD_LIBS -ltie -lrender"
 AC_SUBST(TIE_CFLAGS)
 AC_SUBST(TIE_LIBS)
 
-AC_CONFIG_FILES([Makefile gtk/Makefile])
+AC_CONFIG_FILES([Makefile gtk/Makefile sdl/Makefile])
 AC_OUTPUT
 
 echo "I can has GTK+? ${HAVE_GTK2}"
+echo "I can has SDL? ${HAVE_SDL}"

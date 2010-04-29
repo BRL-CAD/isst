@@ -1,2 +1,2 @@
-SUBDIRS=gtk
+SUBDIRS=gtk sdl
 EXTRA_DIST=TODO
