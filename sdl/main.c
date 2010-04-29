@@ -25,24 +25,51 @@
 
 #include <SDL.h>
 
-int main(int argc, char **argv)
+#include <tie/tie.h>
+#include <tie/adrt.h>
+#include <tie/adrt_struct.h>
+#include <tie/camera.h>
+
+
+struct isst_s {
+    struct tie_s *tie;
+    struct render_camera_s camera;
+    struct camera_tile_s tile;
+    struct adrt_mesh_s *meshes;
+    tienet_buffer_t buffer_image;
+    struct SDL_Rect r;
+};
+
+struct isst_s *
+prep_isst(int argc, const char **argv, SDL_Surface *screen)
 {
-    SDL_Surface *screen;
+    struct isst_s *isst;
+    isst = (struct isst_s *)malloc(sizeof(struct isst_s));
+    isst->r.w = isst->tile.size_x = isst->camera.w = screen->w;
+    isst->r.h = isst->tile.size_y = isst->camera.h = screen->h;
+    isst->r.x = isst->r.y = isst->tile.orig_x = isst->tile.orig_y = 0;
+    isst->tile.format = RENDER_CAMERA_BIT_DEPTH_24;
+    render_camera_init(&isst->camera, bu_avail_cpus());
+    isst->camera.type = RENDER_CAMERA_PERSPECTIVE;
+    isst->camera.fov = 25;
+    VSETALL(isst->camera.pos.v, -10);
+    VSETALL(isst->camera.focus.v, 0);
+    render_phong_init(&isst->camera.render, NULL);
+    isst->tie = (struct tie_s *)bu_malloc(sizeof(struct tie_s), "tie");
+    TIENET_BUFFER_SIZE(isst->buffer_image, 3*screen->w*screen->h);
+    load_g(isst->tie, argv[0], argc-1, argv+1, &(isst->meshes));
+    return isst;
+}
+
+int
+do_loop(SDL_Surface *screen, struct isst_s *isst)
+{
     SDL_Event e;
 
-    SDL_Init (SDL_INIT_VIDEO | SDL_INIT_TIMER);
-    atexit (SDL_Quit);
-
-    /* can we make this resizable? */
-    screen = SDL_SetVideoMode (800, 600, 24, SDL_DOUBLEBUF);
-
-    /* TODO: some stuff to load up geometry and set up the isst buffers */
-
-    /* main event loop */
     while (1)
     {   
-	/* TODO: ask libtie/librender to fill the isst buffer */
-	/* TODO: copy/blit the isst buffer into the sdl screen */
+	render_camera_render(&isst->camera, isst->tie, &isst->tile, screen->pixels);
+	memcpy(screen->pixels, isst->buffer_image.data, screen->w*screen->h*3);
 	SDL_UpdateRect(screen, 0, 0, 0, 0);
 	SDL_WaitEvent (&e);
 	switch (e.type)
@@ -61,6 +88,38 @@ int main(int argc, char **argv)
 		/* TODO: look for mouse events */
 	}
     }
+}
+
+
+int
+main(int argc, char **argv)
+{
+    SDL_Surface *screen;
+    struct isst_s *isst;
+    int w = 800, h = 600, c;
+
+    while((c=getopt(argc, argv, "w:h:")) != -1) {
+    }
+
+    if(w < 1 || h < 1) {
+	printf("Bad screen resolution specified\n");
+	return EXIT_FAILURE;
+    }
+    if(argc < 3) {
+	printf("Must give .g file and list of tops\n");
+	return EXIT_FAILURE;
+    }
+
+    SDL_Init (SDL_INIT_VIDEO | SDL_INIT_TIMER);
+    atexit (SDL_Quit);
+
+    /* can we make this resizable? */
+    screen = SDL_SetVideoMode (w, h, 24, SDL_DOUBLEBUF);
+
+    isst = prep_isst(argc-1, argv+1, screen);
+
+    /* main event loop */
+    return do_loop(screen, isst);
 }
 
 /*
