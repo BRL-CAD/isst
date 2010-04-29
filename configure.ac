@@ -1,6 +1,6 @@
 AC_INIT
 AC_CANONICAL_SYSTEM
-AC_CONFIG_SRCDIR([src/main.c])
+AC_CONFIG_SRCDIR([gtk/main.c])
 AM_CONFIG_HEADER(isst_config.h)
 AM_INIT_AUTOMAKE(isst, 1.0)
 
@@ -55,7 +55,7 @@ TIE_LIBS="$BRLCAD_LIBS -ltie -lrender"
 AC_SUBST(TIE_CFLAGS)
 AC_SUBST(TIE_LIBS)
 
-AC_CONFIG_FILES([Makefile src/Makefile])
+AC_CONFIG_FILES([Makefile gtk/Makefile])
 AC_OUTPUT
 
 echo "I can has GTK+? ${HAVE_GTK2}"
