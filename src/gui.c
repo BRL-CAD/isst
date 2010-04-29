@@ -93,6 +93,8 @@ GtkWidget *isst_flos_posz_spin;
 /* Shotline Table */
 GtkListStore *isst_shotline_store;
 
+GtkWidget **gwlist;
+
 uint8_t isst_flags;
 isst_t isst;
 
@@ -102,6 +104,9 @@ char filename[BUFSIZ];	/* the .g we loaded up */
 #define AZEL_TO_FOC() { \
     V3DIR_FROM_AZEL( isst.camera_foc.v, isst.camera_az * DEG2RAD, isst.camera_el * DEG2RAD ); \
 	VSUB2( isst.camera_foc.v, isst.camera_pos.v, isst.camera_foc.v); }
+
+static void update_camera_widgets ();
+static void update_view_callback (GtkWidget *widget, gpointer ptr);
 
 void
 generic_dialog (char *message)
@@ -580,7 +585,7 @@ load_g_project_callback (const char *file, const char **region)
     snprintf(filename, BUFSIZ, "%s", file);
     if(isst.work_frame == isst_local_work_frame) {
 	    struct bu_vls times;
-	    vect_t max;
+	    vect_t mid;
 
 	    gtk_widget_show_all (isst_window);
 	    
@@ -598,22 +603,22 @@ load_g_project_callback (const char *file, const char **region)
 
 	    VMOVE(isst.geom_min.v, tie->min.v);
 	    VMOVE(isst.geom_max.v, tie->max.v);
-	    VADD2(isst.geom_center.v,  isst.geom_min.v,  isst.geom_max.v);
-	    VSCALE(isst.geom_center.v,  isst.geom_center.v,  0.5);
+	    VADD2SCALE(isst.geom_center.v, isst.geom_min.v, isst.geom_max.v, 0.5);
+	    VMOVE(isst.camera_foc.v,  isst.geom_center.v);
+	    sleep(0);	/* O.o get nan's without this. */
 
-#if 1
-	    VSUB2(max, isst.geom_max.v, isst.geom_min.v);
-	    printf("%g %g %g\n", V3ARGS(max));
-	    max[X] = max[X] / 2.0;
-	    max[Y] = max[Y] / 2.0;
-	    max[Z] = max[Z] / 2.0;
-	    printf("%g %g %g\n", V3ARGS(max));
-#else
-	    VSUB2SCALE(max, isst.geom_max.v, isst.geom_min.v, 0.5);
-#endif
+	    VSUB2SCALE(mid, isst.geom_max.v, isst.geom_min.v, 0.5);
 
-	    isst.geom_radius = MAGNITUDE(max);
-	    printf("%g [%g %g %g] radius, %g %g %g - %g %g %g (%g %g %g)\n", isst.geom_radius, V3ARGS(max), V3ARGS(isst.geom_min.v), V3ARGS(isst.geom_max.v), V3ARGS(isst.geom_center.v));
+	    isst.geom_radius = MAGNITUDE(mid);
+
+	    V3DIR_FROM_AZEL(mid, isst.camera_az, isst.camera_el);
+	    VSCALE(mid, mid, -isst.geom_radius);
+	    VADD2(isst.camera_pos.v, isst.camera_foc.v, mid);
+	    gtk_spin_button_set_value (GTK_SPIN_BUTTON (isst_mouse_speed_spin), isst.geom_radius * 0.002);
+	    gtk_spin_button_set_value (GTK_SPIN_BUTTON (isst_grid_spin), isst.geom_radius);
+	    gtk_spin_button_set_value (GTK_SPIN_BUTTON (isst_grid_spin), isst.camera_grid);
+	    update_camera_widgets();
+	    update_view_callback(NULL, gwlist);
     } else {
 	/*
 	   op = ADRT_NETOP_REQWID;
@@ -1464,7 +1469,7 @@ isst_gui ()
 	radio_orthographic = gtk_radio_button_new_with_label_from_widget (GTK_RADIO_BUTTON (radio_perspective), "Orthographic");
 	gtk_table_attach_defaults (GTK_TABLE (table), radio_orthographic, 0, 1, 6, 7);
 
-	isst_grid_spin = gtk_spin_button_new_with_range (1.0, 20.0, 0.5);
+	isst_grid_spin = gtk_spin_button_new_with_range (0.1, 2000.0, 0.5);
 	gtk_table_attach_defaults (GTK_TABLE (table), isst_grid_spin, 1, 2, 6, 7);
 	gtk_spin_button_set_value (GTK_SPIN_BUTTON (isst_grid_spin), isst.camera_grid);
 
@@ -1482,7 +1487,7 @@ isst_gui ()
 	gtk_table_attach_defaults (GTK_TABLE (table), update_button, 1, 2, 8, 9);
 
 
-	wlist = (GtkWidget **) malloc (7 * sizeof (GtkWidget *));
+	gwlist = wlist = (GtkWidget **) malloc (7 * sizeof (GtkWidget *));
 	wlist[0] = isst_posx_spin;
 	wlist[1] = isst_posy_spin;
 	wlist[2] = isst_posz_spin;
