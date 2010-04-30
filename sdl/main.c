@@ -53,7 +53,6 @@ resize_isst(struct isst_s *isst)
     isst->r.x = isst->r.y = isst->tile.orig_x = isst->tile.orig_y = 0;
     isst->tile.format = RENDER_CAMERA_BIT_DEPTH_24;
     TIENET_BUFFER_SIZE(isst->buffer_image, 3 * isst->w * isst->h);
-    printf("%dx%d 24 %x\n", isst->w, isst->h, isst->sflags);
     isst->screen = SDL_SetVideoMode (isst->w, isst->h, 24, isst->sflags);
     if(isst->screen == NULL) {
 	printf("Failed to generate display context\n");
@@ -81,82 +80,22 @@ prep_isst(int argc, const char **argv)
 void
 paint_ogl(struct isst_s *isst)
 {
+    render_camera_prep(&isst->camera);
+    render_camera_render(&isst->camera, isst->tie, &isst->tile, &isst->buffer_image);
 }
 
 void
 paint_sw(struct isst_s *isst)
 {
     int i;
+    render_camera_prep(&isst->camera);
+    render_camera_render(&isst->camera, isst->tie, &isst->tile, &isst->buffer_image);
     for(i=0;i<isst->h;i++)
 	memcpy(isst->screen->pixels + i * isst->screen->pitch, 
 		isst->buffer_image.data + i * isst->w * 3, 
 		isst->screen->w*3);
     SDL_UpdateRect(isst->screen, 0, 0, 0, 0);
 }
-
-int
-do_loop(struct isst_s *isst)
-{
-    SDL_Event e;
-    struct timeval ts[2];
-    int fc = 0;
-
-    gettimeofday(ts, NULL);
-
-    while (1)
-    {   
-	int i;
-
-	isst->buffer_image.ind = 0;
-	render_camera_prep(&isst->camera);
-	render_camera_render(&isst->camera, isst->tie, &isst->tile, &isst->buffer_image);
-	if(isst->ogl)
-	    paint_ogl(isst);
-	else
-	    paint_sw(isst);
-
-	/* some FPS stuff */
-	fc++;
-	if(fc == 10) {
-	    gettimeofday(ts+1, NULL);
-	    printf("  \r%g FPS", (double)fc/(((double)ts[1].tv_sec+(double)ts[1].tv_usec/(double)1e6) - ((double)ts[0].tv_sec+(double)ts[0].tv_usec/(double)1e6)));      
-	    fflush(stdout);
-	    fc=0;
-	    gettimeofday(ts, NULL);
-	}
-
-	while(SDL_PollEvent (&e))
-	    switch (e.type)
-	    {
-		case SDL_VIDEORESIZE:
-		    isst->w = e.resize.w;
-		    isst->h = e.resize.h;
-		    resize_isst(isst);
-		    break;
-		case SDL_KEYDOWN:
-		    switch (tolower (e.key.keysym.sym))
-		    {
-			case 'f':
-			    if(isst->sflags&SDL_FULLSCREEN)
-				isst->sflags &= ~SDL_FULLSCREEN;
-			    else
-				isst->sflags |= SDL_FULLSCREEN;
-			    resize_isst(isst);
-			    break;
-			case 'x':
-			case 'q':
-			case SDLK_ESCAPE:
-			    SDL_Quit ();
-			    printf("\n");
-			    return EXIT_SUCCESS;
-			    break;
-			    /* TODO: more keys for nifty things like changing mode or pulling up gui bits or something */
-		    }
-		    /* TODO: look for mouse events */
-	    }
-    }
-}
-
 
 int
 main(int argc, char **argv)
