@@ -65,15 +65,15 @@ prep_isst(int argc, const char **argv)
 {
     struct isst_s *isst;
     isst = (struct isst_s *)malloc(sizeof(struct isst_s));
+    isst->tie = (struct tie_s *)bu_malloc(sizeof(struct tie_s), "tie");
+    load_g(isst->tie, argv[0], argc-1, argv+1, &(isst->meshes));
     TIENET_BUFFER_INIT(isst->buffer_image);
     render_camera_init(&isst->camera, bu_avail_cpus());
     isst->camera.type = RENDER_CAMERA_PERSPECTIVE;
     isst->camera.fov = 25;
-    VSETALL(isst->camera.pos.v, 1);
-    VSETALL(isst->camera.focus.v, 0);
+    VSETALL(isst->camera.pos.v, isst->tie->radius);
+    VMOVE(isst->camera.focus.v, isst->tie->mid);
     render_phong_init(&isst->camera.render, NULL);
-    isst->tie = (struct tie_s *)bu_malloc(sizeof(struct tie_s), "tie");
-    load_g(isst->tie, argv[0], argc-1, argv+1, &(isst->meshes));
     return isst;
 }
 

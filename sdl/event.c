@@ -99,6 +99,15 @@ do_loop(struct isst_s *isst)
 			    break;
 			case 4:
 			    /* zoom in/out yrel */
+			    {
+				/* if you zoom past the focus point, it flips
+				 * direction. up is awlays towards the focus. */
+				vect_t vec;
+				VSUB2(vec, isst->camera.focus.v, isst->camera.pos.v);
+				VUNITIZE(vec);
+				VSCALE(vec, vec,  -0.01 * isst->tie->radius * e.motion.yrel);
+				VADD2(isst->camera.pos.v,  isst->camera.pos.v, vec);
+			    }
 			    break;
 		    }
 
