@@ -41,32 +41,17 @@ struct isst_s {
     struct adrt_mesh_s *meshes;
     tienet_buffer_t buffer_image;
     struct SDL_Rect r;
-    struct SDL_Surface *screen;
-    int ogl, sflags, w, h;
 };
 
-void
-resize_isst(struct isst_s *isst)
-{
-    isst->r.w = isst->tile.size_x = isst->camera.w = isst->w;
-    isst->r.h = isst->tile.size_y = isst->camera.h = isst->h;
-    isst->r.x = isst->r.y = isst->tile.orig_x = isst->tile.orig_y = 0;
-    isst->tile.format = RENDER_CAMERA_BIT_DEPTH_24;
-    TIENET_BUFFER_SIZE(isst->buffer_image, 3 * isst->w * isst->h);
-    printf("%dx%d 24 %x\n", isst->w, isst->h, isst->sflags);
-    isst->screen = SDL_SetVideoMode (isst->w, isst->h, 24, isst->sflags);
-    if(isst->screen == NULL) {
-	printf("Failed to generate display context\n");
-	exit(EXIT_FAILURE);
-    }
-}
-
 struct isst_s *
-prep_isst(int argc, const char **argv)
+prep_isst(int argc, const char **argv, SDL_Surface *screen)
 {
     struct isst_s *isst;
     isst = (struct isst_s *)malloc(sizeof(struct isst_s));
-    TIENET_BUFFER_INIT(isst->buffer_image);
+    isst->r.w = isst->tile.size_x = isst->camera.w = screen->w;
+    isst->r.h = isst->tile.size_y = isst->camera.h = screen->h;
+    isst->r.x = isst->r.y = isst->tile.orig_x = isst->tile.orig_y = 0;
+    isst->tile.format = RENDER_CAMERA_BIT_DEPTH_24;
     render_camera_init(&isst->camera, bu_avail_cpus());
     isst->camera.type = RENDER_CAMERA_PERSPECTIVE;
     isst->camera.fov = 25;
@@ -74,28 +59,13 @@ prep_isst(int argc, const char **argv)
     VSETALL(isst->camera.focus.v, 0);
     render_phong_init(&isst->camera.render, NULL);
     isst->tie = (struct tie_s *)bu_malloc(sizeof(struct tie_s), "tie");
+    TIENET_BUFFER_SIZE(isst->buffer_image, 3*screen->w*screen->h);
     load_g(isst->tie, argv[0], argc-1, argv+1, &(isst->meshes));
     return isst;
 }
 
-void
-paint_ogl(struct isst_s *isst)
-{
-}
-
-void
-paint_sw(struct isst_s *isst)
-{
-    int i;
-    for(i=0;i<isst->h;i++)
-	memcpy(isst->screen->pixels + i * isst->screen->pitch, 
-		isst->buffer_image.data + i * isst->w * 3, 
-		isst->screen->w*3);
-    SDL_UpdateRect(isst->screen, 0, 0, 0, 0);
-}
-
 int
-do_loop(struct isst_s *isst)
+do_loop(SDL_Surface *screen, struct isst_s *isst)
 {
     SDL_Event e;
     struct timeval ts[2];
@@ -110,10 +80,8 @@ do_loop(struct isst_s *isst)
 	isst->buffer_image.ind = 0;
 	render_camera_prep(&isst->camera);
 	render_camera_render(&isst->camera, isst->tie, &isst->tile, &isst->buffer_image);
-	if(isst->ogl)
-	    paint_ogl(isst);
-	else
-	    paint_sw(isst);
+	memcpy(screen->pixels, isst->buffer_image.data, screen->w*screen->h*3);
+	SDL_UpdateRect(screen, 0, 0, 0, 0);
 
 	/* some FPS stuff */
 	fc++;
@@ -125,35 +93,33 @@ do_loop(struct isst_s *isst)
 	    gettimeofday(ts, NULL);
 	}
 
-	while(SDL_PollEvent (&e))
-	    switch (e.type)
-	    {
-		case SDL_VIDEORESIZE:
-		    isst->w = e.resize.w;
-		    isst->h = e.resize.h;
-		    resize_isst(isst);
-		    break;
-		case SDL_KEYDOWN:
-		    switch (tolower (e.key.keysym.sym))
-		    {
-			case 'f':
-			    if(isst->sflags&SDL_FULLSCREEN)
-				isst->sflags &= ~SDL_FULLSCREEN;
-			    else
-				isst->sflags |= SDL_FULLSCREEN;
-			    resize_isst(isst);
-			    break;
-			case 'x':
-			case 'q':
-			case SDLK_ESCAPE:
-			    SDL_Quit ();
-			    printf("\n");
-			    return EXIT_SUCCESS;
-			    break;
-			    /* TODO: more keys for nifty things like changing mode or pulling up gui bits or something */
-		    }
-		    /* TODO: look for mouse events */
-	    }
+	/* we can SDL_PollEvent() for continuous rendering */
+	SDL_WaitEvent (&e);
+	switch (e.type)
+	{
+	    case SDL_VIDEORESIZE:
+		printf("Resize!\n");
+		break;
+	    case SDL_KEYDOWN:
+		switch (tolower (e.key.keysym.sym))
+		{
+		    case 'x':
+		    case 'q':
+		    case SDLK_ESCAPE:
+			SDL_Quit ();
+			printf("\n");
+			return EXIT_SUCCESS;
+			break;
+			/* TODO: more keys for nifty things like changing mode or pulling up gui bits or something */
+		}
+	    case SDL_MOUSEMOTION:
+		if(e.motion.state) {
+			printf("\n%d %d %x\n", e.motion.xrel, e.motion.yrel, e.motion.state);
+		}
+		break;
+	    case SDL_MOUSEBUTTON:
+		break;
+	}
     }
 }
 
@@ -161,22 +127,21 @@ do_loop(struct isst_s *isst)
 int
 main(int argc, char **argv)
 {
+    SDL_Surface *screen;
     struct isst_s *isst;
-    int w = 800, h = 600, c, ogl = 0, sflags = SDL_HWSURFACE|SDL_DOUBLEBUF|SDL_RESIZABLE;
+    int w = 800, h = 600, c;
+    int ogl = 0;
 
     const char opts[] = 
 	/* or would it be better to */
 #ifdef HAVE_OPENGL
-	"fw:h:g";
+	"w:h:g";
 #else
-	"fw:h:";
+	"w:h:";
 #endif
 
     while((c=getopt(argc, argv, opts)) != -1)
 	switch(c) {
-	    case 'f':
-		sflags |= SDL_FULLSCREEN;
-		break;
 	    case 'w':
 		w = atoi(optarg);
 		break;
@@ -184,7 +149,6 @@ main(int argc, char **argv)
 		h = atoi(optarg);
 		break;
 	    case 'g':
-		sflags |= SDL_OPENGL;
 		ogl = 1;
 		break;
 	    case ':':
@@ -208,15 +172,13 @@ main(int argc, char **argv)
     SDL_Init (SDL_INIT_VIDEO | SDL_INIT_TIMER);
     atexit (SDL_Quit);
 
-    isst = prep_isst(argc, (const char **)argv);
-    isst->sflags |= sflags;
-    isst->ogl = ogl;
-    isst->w = w;
-    isst->h = h;
-    resize_isst(isst);
+    /* can we make this resizable? */
+    screen = SDL_SetVideoMode (w, h, 24, SDL_DOUBLEBUF|SDL_HWSURFACE|SDL_RESIZABLE);
+
+    isst = prep_isst(argc, (const char **)argv, screen);
 
     /* main event loop */
-    return do_loop(isst);
+    return do_loop(screen, isst);
 }
 
 /*
