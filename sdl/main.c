@@ -92,13 +92,21 @@ do_loop(SDL_Surface *screen, struct isst_s *isst)
 
 
 int
-main(int argc, char **argv)
+main(int argc, const char **argv)
 {
     SDL_Surface *screen;
     struct isst_s *isst;
     int w = 800, h = 600, c;
 
-    while((c=getopt(argc, argv, "w:h:")) != -1) {
+    const char opts[] = 
+	/* or would it be better to */
+#ifdef HAVE_OPENGL
+	"w:h:g";
+#else
+	"w:h:";
+#endif
+
+    while((c=getopt(argc, argv, opts)) != -1) {
     }
 
     if(w < 1 || h < 1) {
