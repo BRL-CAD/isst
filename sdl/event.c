@@ -41,6 +41,32 @@
 
 #include "isst.h"
 
+void 
+move_walk(struct isst_s * isst, double dist)
+{
+    vect_t vec;
+    VSUB2(vec, isst->camera.focus.v, isst->camera.pos.v);
+    VUNITIZE(vec);
+    VSCALE(vec, vec, dist * isst->tie->radius);
+    VADD2(isst->camera.pos.v, isst->camera.pos.v, vec);
+    if(dist < 0) VSCALE(vec, vec, -1);
+    VADD2(isst->camera.focus.v, isst->camera.pos.v, vec);
+}
+
+void 
+move_strafe(struct isst_s * isst, double dist)
+{
+}
+
+void 
+move_float(struct isst_s * isst, double dist)
+{
+}
+
+void 
+look(struct isst_s * isst, double x, double y)
+{
+}
 
 int
 do_loop(struct isst_s *isst)
@@ -106,25 +132,24 @@ do_loop(struct isst_s *isst)
 			case '2': render_shader_init(&isst->camera.render, "normal", NULL); break;
 			case '3': render_shader_init(&isst->camera.render, "depth", NULL); break;
 			case '4': render_shader_init(&isst->camera.render, "component", NULL); break;
+			case 'e':
+			case SDLK_UP: move_walk(isst, dt); break;
+			case 'd':
+			case SDLK_DOWN: move_walk(isst, -dt); break;
+			case 'r': move_strafe(isst, dt); break;
+			case 'w': move_strafe(isst, -dt); break;
+			case ' ': move_float(isst, dt); break;
+			case 'v': move_float(isst, -dt); break;
+
 
 			    /* TODO: more keys for nifty things like changing mode or pulling up gui bits or something */
 		    }
 		case SDL_MOUSEMOTION:
 		    switch(e.motion.state) {
 			case 1:
-			    /* rotate xrel/yrel */
 			    break;
 			case 4:
-			    /* zoom in/out yrel */
-			    {
-				/* if you zoom past the focus point, it flips
-				 * direction. up is awlays towards the focus. */
-				vect_t vec;
-				VSUB2(vec, isst->camera.focus.v, isst->camera.pos.v);
-				VUNITIZE(vec);
-				VSCALE(vec, vec,  - mouse_sensitivity * dt * isst->tie->radius * e.motion.yrel);
-				VADD2(isst->camera.pos.v,  isst->camera.pos.v, vec);
-			    }
+			    look(isst, mouse_sensitivity * dt * e.motion.xrel, mouse_sensitivity * dt * e.motion.yrel);
 			    break;
 		    }
 
