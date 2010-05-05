@@ -10,6 +10,8 @@ AC_PROG_LIBTOOL
 
 AC_LONG_64_BITS
 
+AC_CHECK_FUNCS(strnstr)
+AC_CHECK_HEADERS([unistd.h sys/time.h])
 
 ##
 ## GTK
@@ -47,15 +49,13 @@ AC_ARG_ENABLE(debug,
 	]
 )
 
-AC_CHECK_FUNCS(strnstr)
-
 # Compile in BRLCAD support if specified by user
-BRLCAD_CFLAGS="-I/usr/brlcad/include -I/usr/brlcad/include/brlcad"
+BRLCAD_CFLAGS="-I/usr/brlcad/include -I/usr/brlcad/include/brlcad -I/usr/brlcad/include/tie"
 BRLCAD_LIBS="-L/usr/brlcad/lib"
 AC_ARG_WITH(brlcad, AC_HELP_STRING(--with-brlcad=path,
                 [Specify location of BRLCAD Installation]),
         [
-                BRLCAD_CFLAGS="-I$withval/include -I$withval/include/brlcad"
+                BRLCAD_CFLAGS="-I$withval/include -I$withval/include/brlcad -I$withval/include/tie"
                 BRLCAD_LIBS="-L$withval/lib"
                 AC_DEFINE(HAVE_BRLCAD,1,Checking for BRLCAD Installation)
         ]
