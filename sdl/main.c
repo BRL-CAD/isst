@@ -23,15 +23,26 @@
  *
  */
 
+#ifdef HAVE_CONFIG_H
+# include "isst_config.h"
+#endif
+
 #include <stdio.h>
+
+#ifdef HAVE_UNISTD_H
+# include <unistd.h>
+#endif
+
+#ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>
+#endif
 
 #include <SDL.h>
 
-#include <tie/tie.h>
-#include <tie/adrt.h>
-#include <tie/adrt_struct.h>
-#include <tie/camera.h>
+#include <tie.h>
+#include <adrt.h>
+#include <adrt_struct.h>
+#include <camera.h>
 
 
 struct isst_s {
