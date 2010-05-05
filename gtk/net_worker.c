@@ -82,6 +82,7 @@ isst_net_work_frame()
     uint8_t ind;
     uint8_t message[256];
 
+#if 0
     ind = 0;
 
     /* Send request for next frame */
@@ -168,11 +169,15 @@ isst_net_work_frame()
     TCOPY(uint32_t, &size, 0, message, 1);
 
     tienet_send (isst.socket, message, ind);
+#else
+    bu_exit(-1, "Distributed stuff disabled\n");
+#endif
 }
 
 gpointer
 isst_net_worker (gpointer moocow)
 {
+#if 0
     struct sockaddr_in my_addr, srv_addr;
     struct hostent srv_hostent;
     tienet_buffer_t *buffer;
@@ -370,6 +375,9 @@ isst_net_worker (gpointer moocow)
 		break;
 	}
     }
+#else
+    bu_exit(-1, "Distributed stuff disabled\n");
+#endif
 
     return NULL;
 }
@@ -377,6 +385,7 @@ isst_net_worker (gpointer moocow)
 void load_frame_attribute()
 {
     /* frame attributes (size and format) */
+#if 0
     uint32_t size;
     uint16_t w, h, format;
     uint8_t ind, message[256], op;
@@ -424,6 +433,9 @@ void load_frame_attribute()
 
     /* workspace id */
     tienet_send (isst.socket, &isst.wid, 2);
+#else
+    bu_exit(-1, "Distributed stuff disabled\n");
+#endif
 }
 
 

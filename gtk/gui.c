@@ -257,8 +257,12 @@ menuitem_exit_callback ()
     isst.connected = 0;
 
     if(isst.work_frame == isst_net_work_frame) {
+#if 0
 	op = ADRT_NETOP_SHUTDOWN;
 	tienet_send (isst.socket, &op, 1);
+#else
+	bu_exit(-1, "Distributed stuff disabled\n");
+#endif
     }
 
     exit (0);
@@ -625,7 +629,7 @@ load_g_project_callback (const char *file, const char **region)
 	   tienet_send (isst.socket, &op, 1);
 	   tienet_recv (isst.socket, &isst.wid, 2);
 	   */
-
+#if 0
 	op = ADRT_NETOP_LOAD;
 	tienet_send (isst.socket, &op, 1);
 
@@ -639,6 +643,9 @@ load_g_project_callback (const char *file, const char **region)
 
 	tienet_send (isst.socket, buf, size);
 	load_frame_attribute();
+#else
+	bu_exit(-1, "Distributed stuff disabled\n");
+#endif
     }
 
     isst.work_frame ();
@@ -845,6 +852,7 @@ component_select_callback (GtkWidget *widget, gpointer ptr)
 	    /* should this search be case insensitive? regex? */
 	    m->flags |= strnstr(m->name, str, 255) ? ADRT_MESH_SELECT : 0;
     } else {
+#if 0
 	c = (uint8_t)(strlen (str) + 1);
 
 	/* Send request for next frame */
@@ -870,6 +878,9 @@ component_select_callback (GtkWidget *widget, gpointer ptr)
 	/* string length and string */
 	tienet_send (isst.socket, &c, 1);
 	tienet_send (isst.socket, str, c);
+#else
+	bu_exit(-1, "Distributed stuff disabled");
+#endif
     }
 
     /* Update the component view */
@@ -890,6 +901,7 @@ component_deselect_all_callback (GtkWidget *widget, gpointer ptr)
 	    m->flags = 0;
     } else {
 	/* Send request for next frame */
+#if 0
 	op = ADRT_NETOP_WORK;
 	tienet_send (isst.socket, &op, 1);
 
@@ -908,6 +920,9 @@ component_deselect_all_callback (GtkWidget *widget, gpointer ptr)
 	/* number of strings to select */
 	num = 0;
 	tienet_send (isst.socket, &num, 4);
+#else
+	bu_exit(-1, "Distributed stuff disabled");
+#endif
     }
 
     /* Update the component view */
@@ -1000,6 +1015,7 @@ fire_shotline_callback (GtkWidget *widget, gpointer ptr)
 	ind += sizeof (TIE_3);
     } else {
 	/* Send request for next frame */
+#if 0
 	op = ADRT_NETOP_WORK;
 	tienet_send (isst.socket, &op, 1);
 
@@ -1017,6 +1033,9 @@ fire_shotline_callback (GtkWidget *widget, gpointer ptr)
 	/* Send Position and Direction */
 	tienet_send (isst.socket, ray.pos.v, sizeof (TIE_3));
 	tienet_send (isst.socket, ray.dir.v, sizeof (TIE_3));
+#else
+	bu_exit(-1, "Distributed stuff disabled\n");
+#endif
     }
 }
 
