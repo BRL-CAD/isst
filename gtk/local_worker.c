@@ -82,26 +82,26 @@ isst_local_worker (gpointer moocow) {
 	    switch(isst.mode) {
 		case ISST_MODE_SHADED:
 		case ISST_MODE_SHOTLINE:
-		    render_phong_init(&camera.render, NULL);
+		    render_shader_init(&camera.render, "phong", NULL);
 		    break;
 		case ISST_MODE_NORMAL:
-		    render_normal_init(&camera.render, NULL);
+		    render_shader_init(&camera.render, "normal", NULL);
 		    break;
 		case ISST_MODE_DEPTH:
-		    render_depth_init(&camera.render, NULL);
+		    render_shader_init(&camera.render, "depth", NULL);
 		    break;
 		case ISST_MODE_COMPONENT:
-		    render_component_init(&camera.render, NULL);
+		    render_shader_init(&camera.render, "component", NULL);
 		    break;
 		case ISST_MODE_CUT:
 		    VMOVE(isst.shotline_pos.v, isst.camera_pos.v);
 		    VSUB2(isst.shotline_dir.v, isst.camera_foc.v, isst.camera_pos.v);
 		    snprintf(buf, BUFSIZ, "#(%f %f %f) #(%f %f %f)", V3ARGS(isst.shotline_pos.v), V3ARGS(isst.shotline_dir.v));
-		    render_cut_init(&camera.render, buf);
+		    render_shader_init(&camera.render, "cut", buf);
 		    break;
-		case ISST_MODE_FLOS: 
+		case ISST_MODE_FLOS:
 		    snprintf(buf, BUFSIZ, "#(%f %f %f)", V3ARGS(isst.shotline_pos.v));
-		    render_flos_init(&camera.render, buf);
+		    render_shader_init(&camera.render, "flos", buf);
 		    break;
 		default:
 		    bu_log("Bad mode: %d\n", isst.mode);
