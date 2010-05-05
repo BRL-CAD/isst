@@ -48,6 +48,8 @@ do_loop(struct isst_s *isst)
     SDL_Event e;
     struct timeval ts[2];
     int fc = 0;
+    double dt = 1.0, dt2 = 0.0;
+    double mouse_sensitivity = 0.1;
 
     gettimeofday(ts, NULL);
 
@@ -63,12 +65,16 @@ do_loop(struct isst_s *isst)
 
 	/* some FPS stuff */
 	fc++;
-	if(fc == 10) {
-	    gettimeofday(ts+1, NULL);
-	    printf("  \r%g FPS", (double)fc/(((double)ts[1].tv_sec+(double)ts[1].tv_usec/(double)1e6) - ((double)ts[0].tv_sec+(double)ts[0].tv_usec/(double)1e6)));      
+	gettimeofday(ts+1, NULL);
+	dt = (((double)ts[1].tv_sec+(double)ts[1].tv_usec/(double)1e6) - ((double)ts[0].tv_sec+(double)ts[0].tv_usec/(double)1e6));
+	dt2 += dt;
+
+	gettimeofday(ts, NULL);
+	if(dt2 > 0.5) {
+	    printf("  \r%g FPS", (double)fc/dt2);
 	    fflush(stdout);
 	    fc=0;
-	    gettimeofday(ts, NULL);
+	    dt2 = 0;
 	}
 
 	while(SDL_PollEvent (&e))
@@ -116,7 +122,7 @@ do_loop(struct isst_s *isst)
 				vect_t vec;
 				VSUB2(vec, isst->camera.focus.v, isst->camera.pos.v);
 				VUNITIZE(vec);
-				VSCALE(vec, vec,  -0.01 * isst->tie->radius * e.motion.yrel);
+				VSCALE(vec, vec,  - mouse_sensitivity * dt * isst->tie->radius * e.motion.yrel);
 				VADD2(isst->camera.pos.v,  isst->camera.pos.v, vec);
 			    }
 			    break;
