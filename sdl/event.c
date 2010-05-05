@@ -96,6 +96,11 @@ do_loop(struct isst_s *isst)
 			    printf("\n");
 			    return EXIT_SUCCESS;
 			    break;
+			case '1': render_shader_init(&isst->camera.render, "phong", NULL); break;
+			case '2': render_shader_init(&isst->camera.render, "normal", NULL); break;
+			case '3': render_shader_init(&isst->camera.render, "depth", NULL); break;
+			case '4': render_shader_init(&isst->camera.render, "component", NULL); break;
+
 			    /* TODO: more keys for nifty things like changing mode or pulling up gui bits or something */
 		    }
 		case SDL_MOUSEMOTION:
