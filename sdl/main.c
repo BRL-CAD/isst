@@ -163,6 +163,9 @@ main(int argc, char **argv)
     isst->ogl = ogl;
     isst->w = w;
     isst->h = h;
+    if(render_shader_load_plugin(".libs/libmyplugin.0.dylib")) {
+	    printf("Failed loading plugin");
+    }
     resize_isst(isst);
 
     /* main event loop */
