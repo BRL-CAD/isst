@@ -105,9 +105,10 @@ do_loop(struct isst_s *isst)
 {
     SDL_Event e;
     struct timeval ts[2];
-    int fc = 0, showfps = 0;
+    int fc = 0, showfps = 1;
     double dt = 1.0, dt2 = 0.0;
     double mouse_sensitivity = 0.1;
+    int vel[3] = { 0, 0, 0 };
 
     gettimeofday(ts, NULL);
 
@@ -165,18 +166,34 @@ do_loop(struct isst_s *isst)
 			case '3': render_shader_init(&isst->camera.render, "depth", NULL); break;
 			case '4': render_shader_init(&isst->camera.render, "component", NULL); break;
 			case '=': render_shader_init(&isst->camera.render, "myplugin", NULL); break;
-			case 'e':
-			case SDLK_UP: move_walk(isst, dt); break;
-			case 'd':
-			case SDLK_DOWN: move_walk(isst, -dt); break;
-			case 'r': move_strafe(isst, dt); break;
-			case 'w': move_strafe(isst, -dt); break;
-			case ' ': move_float(isst, dt); break;
-			case 'v': move_float(isst, -dt); break;
-
-
-			    /* TODO: more keys for nifty things like changing mode or pulling up gui bits or something */
+			case SDLK_UP:
+			case 'e': vel[1] = 1; break;
+			case SDLK_DOWN:
+			case 'd': vel[1] = -1; break;
+			case SDLK_RIGHT:
+			case 'r': vel[0] = 1; break;
+			case SDLK_LEFT:
+			case 'w': vel[0] = -1; break;
+			case ' ': vel[2] = 1; break;
+			case 'v': vel[2] = -1; break;
+			/* TODO: more keys for nifty things like changing mode or pulling up gui bits or something */
 		    }
+		    break;
+		case SDL_KEYUP:
+		    switch (tolower (e.key.keysym.sym))
+		    {
+			case SDLK_UP:
+			case SDLK_DOWN: 
+			case 'e':
+			case 'd': vel[1] = 0; break;
+			case SDLK_RIGHT:
+			case SDLK_LEFT:
+			case 'r':
+			case 'w': vel[0] = 0; break;
+			case ' ':
+			case 'v': vel[2] = 0; break;
+		    }
+		    break;
 		case SDL_MOUSEMOTION:
 		    switch(e.motion.state) {
 			case 1:
@@ -185,8 +202,12 @@ do_loop(struct isst_s *isst)
 			    look(isst, mouse_sensitivity * dt * e.motion.xrel, mouse_sensitivity * dt * e.motion.yrel);
 			    break;
 		    }
+		    break;
 
 	    }
+	if(vel[0] != 0) move_strafe(isst, dt*(double)vel[0]);
+	if(vel[1] != 0) move_walk(isst, dt*(double)vel[1]);
+	if(vel[2] != 0) move_float(isst, dt*(double)vel[2]);
     }
 }
 
