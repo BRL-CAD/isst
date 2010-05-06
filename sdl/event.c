@@ -56,16 +56,48 @@ move_walk(struct isst_s * isst, double dist)
 void 
 move_strafe(struct isst_s * isst, double dist)
 {
+    vect_t vec, dir, up;
+    VSET(up, 0, 0, 1);
+    VSUB2(dir, isst->camera.focus.v, isst->camera.pos.v);
+    VUNITIZE(dir);
+    VCROSS(vec, dir, up);
+    VSCALE(vec, vec, dist * isst->tie->radius);
+    VADD2(isst->camera.pos.v, isst->camera.pos.v, vec);
+    VADD2(isst->camera.focus.v, isst->camera.pos.v, dir);
 }
 
 void 
 move_float(struct isst_s * isst, double dist)
 {
+    isst->camera.pos.v[2] += dist;
+    isst->camera.focus.v[2] += dist;
 }
 
 void 
 look(struct isst_s * isst, double x, double y)
 {
+    double az, el;
+    vect_t vec;
+
+    /* generate az/el (oddly, this generates degrees instead of radians) */
+    VSUB2(vec, isst->camera.pos.v, isst->camera.focus.v);
+    VUNITIZE(vec);
+    AZEL_FROM_V3DIR(az, el, vec);
+    az *= -DEG2RAD;
+    el *= -DEG2RAD;
+
+    az -= 0.5*x;
+    el -= 0.5*y;
+
+    /* clamp to sane values */
+    while(az > 2*M_PI) az -= 2*M_PI;
+    while(az < 0) az += 2*M_PI;
+    if(el>M_PI_2) el=M_PI_2;
+    if(el<-M_PI_2) el=-M_PI_2;
+
+    /* generate the new lookat point */
+    V3DIR_FROM_AZEL(vec, az, el);
+    VADD2(isst->camera.focus.v, isst->camera.pos.v, vec);
 }
 
 int
@@ -73,7 +105,7 @@ do_loop(struct isst_s *isst)
 {
     SDL_Event e;
     struct timeval ts[2];
-    int fc = 0;
+    int fc = 0, showfps = 0;
     double dt = 1.0, dt2 = 0.0;
     double mouse_sensitivity = 0.1;
 
@@ -96,7 +128,7 @@ do_loop(struct isst_s *isst)
 	dt2 += dt;
 
 	gettimeofday(ts, NULL);
-	if(dt2 > 0.5) {
+	if(showfps && dt2 > 0.5) {
 	    printf("  \r%g FPS", (double)fc/dt2);
 	    fflush(stdout);
 	    fc=0;
