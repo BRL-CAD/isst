@@ -61,6 +61,8 @@ char *strnstr(const char *s1, const char *s2, size_t n) { return strstr(s1, s2);
 
 #define TABLE_BORDER_WIDTH	0
 
+static const char shotfilefmt[] = "S %s POS<%g %g %g> AZEL<%g %g> XY<%g %g>";
+
 /* GUI */
 GtkWidget *isst_window = NULL;
 GtkUIManager *isst_ui_manager;
@@ -92,6 +94,7 @@ GtkWidget *isst_flos_posz_spin;
 
 /* Shotline Table */
 GtkListStore *isst_shotline_store;
+GtkListStore *isst_saved_shotline_store;
 
 GtkWidget **gwlist;
 
@@ -652,6 +655,49 @@ load_g_project_callback (const char *file, const char **region)
     return rval;
 }
 
+void
+shotline_load_activated(GtkTreeView *treeview, GtkTreePath *path, GtkTreeViewColumn *col, gpointer usr)
+{
+    char shot[BUFSIZ], hn[BUFSIZ], filename[BUFSIZ];
+    GtkTreeIter iter;
+    if (gtk_tree_model_get_iter(isst_saved_shotline_store, &iter, path))
+    {
+	gchar *str;
+	float w, h;
+	int i;
+	gtk_tree_model_get(isst_saved_shotline_store, &iter, 1, &str, -1);
+	i = sscanf(str, shotfilefmt,
+			&shot,
+			&isst.camera_pos.v[0], &isst.camera_pos.v[1], &isst.camera_pos.v[2],
+			&isst.camera_az, &isst.camera_el, &w, &h);
+	gtk_spin_button_set_value (GTK_SPIN_BUTTON (isst_cellx_spin), w * (tfloat) isst.context_width);
+	gtk_spin_button_set_value (GTK_SPIN_BUTTON (isst_celly_spin), h * (tfloat) isst.context_height);
+	g_free(str);
+	gtk_widget_destroy(GTK_WIDGET(usr));
+    }
+    isst_update_gui ();
+    AZEL_TO_FOC ();
+    isst.update_avail = 1;
+    isst.work_frame ();
+}
+
+static void
+menuitem_load_shotline_callback()
+{
+    GtkWidget *window, *view;
+    GtkCellRenderer *renderer;
+    GtkTreeModel *model;
+
+    window = gtk_window_new (GTK_WINDOW_TOPLEVEL);
+    view = gtk_tree_view_new ();
+    renderer = gtk_cell_renderer_text_new ();
+    gtk_tree_view_insert_column_with_attributes (GTK_TREE_VIEW (view), -1, "Name", renderer, "text", 0, NULL);
+    gtk_tree_view_set_model (GTK_TREE_VIEW (view), isst_saved_shotline_store);
+    g_signal_connect(view, "row-activated", (GCallback)shotline_load_activated, window);
+    gtk_container_add (GTK_CONTAINER (window), view);
+    gtk_widget_show_all (window);
+}
+
 static void
 menuitem_load_g_callback ()
 {
@@ -794,44 +840,56 @@ apply_delta_callback (GtkWidget *widget, gpointer ptr)
     isst.mouse_y = celly;
 }
 
-static void
-save_shotline_callback (GtkWidget *widget, gpointer ptr)
+static gboolean model_fwrite(GtkTreeModel *model, GtkTreePath *path, GtkTreeIter *iter, gpointer data)
 {
-	FILE *out;
-	char slf[BUFSIZ], buf[BUFSIZ], hn[BUFSIZ];
-	const char *shotname;
+    gchar *str;
 
-	/* Create a new analysis */
-	shotname = gtk_entry_get_text (GTK_ENTRY (isst_name_entry));
-	if (strlen(shotname) == 0)
-	{ 
-		generic_dialog ("Must provide name for shotline.");
-		return;
-	}
-
-	snprintf (slf, BUFSIZ, "%s/.isst", getenv("HOME"));
-
-	if ((out = fopen(slf, "a")) == NULL) {
-		snprintf(buf, BUFSIZ, "Unable to open %s for writing", slf);
-		generic_dialog (buf);
-		return;
-	}
-
-	if(!gethostname(hn, BUFSIZ))
-		snprintf(hn, BUFSIZ, "unknown");
-
-	fprintf (out, "S %s: \"%s:%s\" %f <%f %f %f> %f-%f %fx%f)\n",
-			shotname, hn, filename, isst.camera_grid, V3ARGS(isst.camera_pos.v), isst.camera_az, isst.camera_el,
-			(float) gtk_spin_button_get_value (GTK_SPIN_BUTTON (isst_cellx_spin)) / (tfloat) isst.context_width,
-			(float) gtk_spin_button_get_value (GTK_SPIN_BUTTON (isst_celly_spin)) / (tfloat) isst.context_height);
-	fclose(out);
-
-	snprintf(buf, BUFSIZ, "Shotline %s saved to %s", shotname, slf);
-	generic_dialog(buf);
-	return;
+    gtk_tree_model_get(model, iter, 1, &str);
+    fprintf((FILE *)data, "%s\n", str);
+    return FALSE;
 }
 
-static void prbuf(int i, unsigned char *buf) { while(i--) printf("%02X ", *buf++); }
+static void
+save_shotline_callback (GtkWidget *widget, gpointer ptr)
+
+    FILE *out;
+    char slf[BUFSIZ], buf[BUFSIZ], hn[BUFSIZ], ss[BUFSIZ];
+    const char *shotname;
+    GtkTreeIter iter;
+
+    shotname = gtk_entry_get_text (GTK_ENTRY (isst_name_entry));
+    if (strlen(shotname) == 0) { 
+	generic_dialog ("Must provide name for shotline.");
+	return;
+    }
+
+    /* update the table */
+    if(!gethostname(hn, BUFSIZ))
+	snprintf(hn, BUFSIZ, "unknown");
+
+    snprintf (ss, BUFSIZ, shotfilefmt,
+	    shotname, V3ARGS(isst.camera_pos.v), isst.camera_az, isst.camera_el,
+	    gtk_spin_button_get_value (GTK_SPIN_BUTTON (isst_cellx_spin)) / (tfloat) isst.context_width,
+	    gtk_spin_button_get_value (GTK_SPIN_BUTTON (isst_celly_spin)) / (tfloat) isst.context_height);
+
+    gtk_list_store_append(isst_saved_shotline_store, &iter);
+    gtk_list_store_set(isst_saved_shotline_store, &iter, 0, shotname, 1, ss, -1);
+
+    /* write the table to the file */
+    snprintf (slf, BUFSIZ, "%s/.isst", getenv("HOME"));
+
+    if ((out = fopen(slf, "w")) == NULL) {
+	snprintf(buf, BUFSIZ, "Unable to open %s for writing", slf);
+	generic_dialog (buf);
+	return;
+    }
+    gtk_tree_model_foreach(GTK_TREE_MODEL(isst_saved_shotline_store), model_fwrite, out);
+    fclose(out);
+
+    snprintf(buf, BUFSIZ, "Shotline %s saved to %s", shotname, slf);
+    generic_dialog(buf);
+    return;
+}
 
 static void
 component_select_callback (GtkWidget *widget, gpointer ptr)
@@ -1213,6 +1271,7 @@ context_motion_event (GtkWidget *widget, GdkEventMotion *event)
 static GtkActionEntry entries[] = {
     { "ISSTMenu",		NULL,			"_ISST" },
     { "Load G",		GTK_STOCK_OPEN,		"Load _G",		"<control>G",	"Load G",		menuitem_load_g_callback },
+    { "Load Shotline",		GTK_STOCK_OPEN,		"Load _Shotline",		"<control>S",	"Load S",		menuitem_load_shotline_callback },
     { "Quit",		GTK_STOCK_QUIT,		"_Quit",		"<control>Q",	"Quit",			menuitem_exit_callback },
     { "ModeMenu",		NULL,			"_Mode" },
     { "Shaded View",	NULL,			"Shaded View",		NULL,		"Shaded View",		menuitem_view_shaded_callback },
@@ -1243,6 +1302,7 @@ static const char *ui_description =
 "	<menubar name='MainMenu'>"
 "		<menu action='ISSTMenu'>"
 "			<menuitem action='Load G'/>"
+"			<menuitem action='Load Shotline'/>"
 "			<menuitem action='Quit'/>"
 "		</menu>"
 "		<menu action='ModeMenu'>"
@@ -1366,7 +1426,7 @@ isst_gui ()
 	sw = gtk_scrolled_window_new (NULL, NULL);
 	gtk_scrolled_window_set_shadow_type (GTK_SCROLLED_WINDOW (sw), GTK_SHADOW_ETCHED_IN);
 	gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (sw), GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
-        gtk_paned_add2(GTK_PANED(vp), GTK_WIDGET(sw));
+	gtk_paned_add2(GTK_PANED(vp), GTK_WIDGET(sw));
 	/* Make room for horizontal scroll bar */
 	gtk_widget_set_size_request (GTK_WIDGET (sw), isst.context_width, ISST_WINDOW_H-isst.context_height - 28);
 
@@ -1400,7 +1460,7 @@ isst_gui ()
 	gtk_tree_view_append_column (GTK_TREE_VIEW (treeview), column);
     }
 
-	/*** the left chunk ***/
+    /*** the left chunk ***/
     /* Create the notebook to contain widgets for each mode */
     isst_notebook = gtk_notebook_new ();
     gtk_widget_set_size_request (GTK_WIDGET (isst_notebook), ISST_WINDOW_W - isst.context_width, ISST_WINDOW_H);
@@ -1765,6 +1825,11 @@ isst_free ()
 void
 isst_init (int argc, char **argv)
 {
+    FILE *sfh;	/* shot file handle (~/.isst) */
+    char shotfile[BUFSIZ];
+    GtkTreeIter iter;
+
+    snprintf (shotfile, BUFSIZ, "%s/.isst", getenv("HOME"));
     isst_setup ();
 
     /* Start application with all flags off */
@@ -1781,12 +1846,36 @@ isst_init (int argc, char **argv)
 
     isst_gui ();
 
+    /* populate the saved shotline model from the ~/.isst file */
+    isst_saved_shotline_store = gtk_list_store_new (2, G_TYPE_STRING, G_TYPE_STRING);
+    if((sfh = fopen(shotfile, "r")) != NULL) {
+	char buf[BUFSIZ], shotname[BUFSIZ];
+	while(fgets(buf, BUFSIZ-1, sfh)) {
+	    if(*buf == 'S') {
+		char *s1 = buf + 2, *s2 = shotname;
+		while(*s1 != ' ')
+		    *s2++ = *s1++;
+		*s2 = 0;
+#if 0
+		/* chomp() */
+		for(s1=buf;*s1=='\n';s1++);
+		*s1 = '\0';
+		s1 = buf;
+#endif
+		/* and save */
+		gtk_list_store_append(isst_saved_shotline_store, &iter);
+		gtk_list_store_set(isst_saved_shotline_store, &iter, 0, shotname, 1, buf, -1);
+	    }
+	}
+	fclose(sfh);
+    }
+
     GTK_WIDGET_UNSET_FLAGS (isst_context, GTK_DOUBLE_BUFFERED);
     gtk_widget_show_all (isst_window);
 
     if(argc>=2) {
 	snprintf(filename, BUFSIZ, "%s", *argv);
-        load_g_project_callback((const char *)*argv, (const char **)argv+1);
+	load_g_project_callback((const char *)*argv, (const char **)argv+1);
     }
 
     gtk_main ();
