@@ -166,6 +166,22 @@ do_loop(struct isst_s *isst)
 			case '3': render_shader_init(&isst->camera.render, "depth", NULL); break;
 			case '4': render_shader_init(&isst->camera.render, "component", NULL); break;
 			case '=': render_shader_init(&isst->camera.render, "myplugin", NULL); break;
+			case SDLK_DELETE:
+			case '-':
+				  {
+				      char *shadername = NULL;
+				      printf("\nReloading plugin\n");
+				      if(render_shader_unload_plugin(&isst->camera.render, "myplugin")) {
+					  printf("Failed unloading plugin");
+					  exit(-1);
+				      }
+				      shadername = render_shader_load_plugin(".libs/libmyplugin.0.dylib");
+					  if(shadername == NULL)
+					      printf("Failed loading plugin");
+					  else
+					      printf("Loaded shader: %s\n", shadername);
+				  }
+				  break;
 			case SDLK_UP:
 			case 'e': vel[1] = 1; break;
 			case SDLK_DOWN:
@@ -176,7 +192,7 @@ do_loop(struct isst_s *isst)
 			case 'w': vel[0] = -1; break;
 			case ' ': vel[2] = 1; break;
 			case 'v': vel[2] = -1; break;
-			/* TODO: more keys for nifty things like changing mode or pulling up gui bits or something */
+				  /* TODO: more keys for nifty things like changing mode or pulling up gui bits or something */
 		    }
 		    break;
 		case SDL_KEYUP:

@@ -32,6 +32,10 @@ struct isst_s {
     struct SDL_Rect r;
     struct SDL_Surface *screen;
     int ogl, sflags, w, h;
+#ifdef HAVE_OPENGL
+    int texid;
+    void *texdata;
+#endif
 };
 
 void resize_isst(struct isst_s *isst);

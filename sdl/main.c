@@ -38,23 +38,16 @@
 #endif
 
 #include <SDL.h>
+#ifdef HAVE_OPENGL
+# include <SDL_opengl.h>
+#endif
 
 #include <tie.h>
 #include <adrt.h>
 #include <adrt_struct.h>
 #include <camera.h>
 
-
-struct isst_s {
-    struct tie_s *tie;
-    struct render_camera_s camera;
-    struct camera_tile_s tile;
-    struct adrt_mesh_s *meshes;
-    tienet_buffer_t buffer_image;
-    struct SDL_Rect r;
-    struct SDL_Surface *screen;
-    int ogl, sflags, w, h;
-};
+#include "isst.h"
 
 void
 resize_isst(struct isst_s *isst)
@@ -69,6 +62,24 @@ resize_isst(struct isst_s *isst)
 	printf("Failed to generate display context\n");
 	exit(EXIT_FAILURE);
     }
+#ifdef HAVE_OPENGL
+    if(isst->sflags & SDL_OPENGL) {
+	glClearColor (0.0, 0, 0.0, 1);
+	glBindTexture (GL_TEXTURE_2D, isst->texid);
+	glPixelStorei (GL_UNPACK_ALIGNMENT, 1);
+	glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexEnvf (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+	isst->texdata = malloc(isst->r.w * isst->r.h * 3);
+	glTexImage2D (GL_TEXTURE_2D, 0, GL_RGB, isst->r.w, isst->r.h, 0, GL_RGB, GL_UNSIGNED_BYTE, isst->texdata);
+	glDisable(GL_LIGHTING);
+	glViewport(0,0,isst->r.w, isst->r.h);
+	glMatrixMode (GL_PROJECTION);
+	glLoadIdentity ();
+	glOrtho(0, isst->r.w, isst->r.h, 0, -1, 1);
+	glMatrixMode (GL_MODELVIEW);
+    }
+#endif
 }
 
 struct isst_s *
@@ -91,8 +102,23 @@ prep_isst(int argc, const char **argv)
 void
 paint_ogl(struct isst_s *isst)
 {
+#ifdef HAVE_OPENGL
     render_camera_prep(&isst->camera);
     render_camera_render(&isst->camera, isst->tie, &isst->tile, &isst->buffer_image);
+    glClear(GL_DEPTH_BUFFER_BIT/*|GL_COLOR_BUFFER_BIT*/);
+    glLoadIdentity();
+    glColor3f(1,1,1);
+    glEnable(GL_TEXTURE_2D);
+    glBindTexture(GL_TEXTURE_2D, isst->texid);
+    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, isst->r.w, isst->r.h, GL_RGB, GL_UNSIGNED_BYTE, isst->buffer_image.data);
+    glBegin(GL_TRIANGLE_STRIP);
+    glTexCoord2d(0,0); glVertex3f(0,0,0);
+    glTexCoord2d(0,1); glVertex3f(0,isst->r.h,0);
+    glTexCoord2d(1,0); glVertex3f(isst->r.w,0,0);
+    glTexCoord2d(1,1); glVertex3f(isst->r.w,isst->r.h,0);
+    glEnd();
+    SDL_GL_SwapBuffers();
+#endif
 }
 
 void
