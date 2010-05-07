@@ -176,10 +176,10 @@ do_loop(struct isst_s *isst)
 					  exit(-1);
 				      }
 				      shadername = render_shader_load_plugin(".libs/libmyplugin.0.dylib");
-					  if(shadername == NULL)
-					      printf("Failed loading plugin");
-					  else
-					      printf("Loaded shader: %s\n", shadername);
+				      if(shadername == NULL)
+					  printf("Failed loading plugin");
+				      else
+					  printf("Loaded shader: %s\n", shadername);
 				  }
 				  break;
 			case SDLK_UP:
