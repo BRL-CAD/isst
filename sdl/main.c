@@ -76,7 +76,7 @@ prep_isst(int argc, const char **argv)
 {
     struct isst_s *isst;
     isst = (struct isst_s *)malloc(sizeof(struct isst_s));
-    isst->tie = (struct tie_s *)bu_malloc(sizeof(struct tie_s), "tie");
+    isst->tie = (struct tie_s *)bu_calloc(1,sizeof(struct tie_s), "tie");
     load_g(isst->tie, argv[0], argc-1, argv+1, &(isst->meshes));
     TIENET_BUFFER_INIT(isst->buffer_image);
     render_camera_init(&isst->camera, bu_avail_cpus());
