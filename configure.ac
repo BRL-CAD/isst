@@ -4,6 +4,8 @@ AC_CONFIG_SRCDIR([gtk/main.c])
 AM_CONFIG_HEADER(isst_config.h)
 AM_INIT_AUTOMAKE(isst, 1.0)
 
+AC_CONFIG_MACRO_DIR([m4])
+
 AC_PROG_CC
 AC_PROG_INSTALL
 AC_PROG_LIBTOOL
@@ -36,6 +38,10 @@ if test "x$HAVE_GTK2" = xno && "xHAVE_SDL" = xno
 then
 	AC_MSG_ERROR(["Requires either GTK+-2.0 or SDL 1.2+"])
 fi
+
+AM_PATH_OPENGL(AC_DEFINE(HAVE_OPENGL,,OpenGL exists), AC_MSG_WARN(Cannot find OpenGL, doing without))
+AC_SUBST(GL_CFLAGS)
+AC_SUBST(GL_LIBS)
 
 AC_MSG_CHECKING(whether to compile for debugging)
 want_debug=no
