@@ -175,11 +175,7 @@ do_loop(struct isst_s *isst)
 					  printf("Failed unloading plugin");
 					  exit(-1);
 				      }
-				      shadername = render_shader_load_plugin(".libs/libmyplugin.0.dylib");
-				      if(shadername == NULL)
-					  printf("Failed loading plugin");
-				      else
-					  printf("Loaded shader: %s\n", shadername);
+				      render_shader_init(&isst->camera.render, render_shader_load_plugin(".libs/libmyplugin.0.dylib"), NULL);
 				  }
 				  break;
 			case SDLK_UP:
