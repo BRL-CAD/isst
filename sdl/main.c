@@ -159,7 +159,7 @@ main(int argc, char **argv)
     atexit (SDL_Quit);
 
     isst = prep_isst(argc, (const char **)argv);
-    isst->sflags |= sflags;
+    isst->sflags = sflags;
     isst->ogl = ogl;
     isst->w = w;
     isst->h = h;
