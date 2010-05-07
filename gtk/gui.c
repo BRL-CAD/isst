@@ -302,6 +302,19 @@ VIEW(front, 0, +,   0, 0);
 VIEW(left,  1, +,  90, 0);
 VIEW(back,  0, -, 180, 0);
 VIEW(right, 1, -, 270, 0);
+static void menuitem_view_aiieee_callback () {
+	vect_t vec;
+	VSUB2(vec, isst.geom_center.v, isst.camera_pos.v);
+	VUNITIZE(vec);
+	printf("%g %g %g\n", V3ARGS(vec));
+	AZEL_FROM_V3DIR(isst.camera_az, isst.camera_el, vec);
+	isst.camera_az *= -1;
+	isst.camera_el *= -1;
+	isst_update_gui ();
+	AZEL_TO_FOC();
+	isst.update_avail = 1;
+	isst.work_frame ();
+}
 
 static void
 view_hit_point_callback (GtkWidget *widget, gpointer ptr)
@@ -610,13 +623,13 @@ load_g_project_callback (const char *file, const char **region)
 
 	    VMOVE(isst.geom_min.v, tie->min.v);
 	    VMOVE(isst.geom_max.v, tie->max.v);
-	    VADD2SCALE(isst.geom_center.v, isst.geom_min.v, isst.geom_max.v, 0.5);
+	    VMOVE(isst.geom_center.v, tie->mid);
 	    VMOVE(isst.camera_foc.v,  isst.geom_center.v);
 	    sleep(0);	/* O.o get nan's without this. */
 
 	    VSUB2SCALE(mid, isst.geom_max.v, isst.geom_min.v, 0.5);
 
-	    isst.geom_radius = MAGNITUDE(mid);
+	    isst.geom_radius = tie->radius;
 
 	    V3DIR_FROM_AZEL(mid, isst.camera_az, isst.camera_el);
 	    VSCALE(mid, mid, -isst.geom_radius);
@@ -851,7 +864,7 @@ static gboolean model_fwrite(GtkTreeModel *model, GtkTreePath *path, GtkTreeIter
 
 static void
 save_shotline_callback (GtkWidget *widget, gpointer ptr)
-
+{
     FILE *out;
     char slf[BUFSIZ], buf[BUFSIZ], hn[BUFSIZ], ss[BUFSIZ];
     const char *shotname;
@@ -1289,6 +1302,7 @@ static GtkActionEntry entries[] = {
     { "Back",		NULL,			"Back",			NULL,		"Back",			menuitem_view_back_callback },
     { "Left",		NULL,			"Left",			NULL,		"Left",			menuitem_view_left_callback },
     { "Right",		NULL,			"Right",		NULL,		"Right",		menuitem_view_right_callback },
+    { "Aiieee",		NULL,			"Aiieee",		NULL,		"Aiieee",		menuitem_view_aiieee_callback },
     { "Hit Point",		NULL,			"Hit Point",		NULL,		"Hit Point",		menuitem_view_hit_point_callback },
     { "MiscMenu",		NULL,			"_Misc" },
     { "Screen Capture",	NULL,			"Screen Capture",	NULL,		"Screen Capture",	menuitem_misc_screenshot_callback },
@@ -1322,6 +1336,7 @@ static const char *ui_description =
 "			<menuitem action='Back'/>"
 "			<menuitem action='Left'/>"
 "			<menuitem action='Right'/>"
+"			<menuitem action='Aiieee'/>"
 "			<separator/>"
 "			<menuitem action='Hit Point'/>"
 "		</menu>"
