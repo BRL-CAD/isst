@@ -42,6 +42,9 @@
 # include <SDL_opengl.h>
 #endif
 
+#include <agar/core.h>
+#include <agar/gui.h>
+
 #include <tie.h>
 #include <adrt.h>
 #include <adrt_struct.h>
@@ -49,6 +52,7 @@
 
 #include "isst.h"
 
+struct isst_s *isst;
 void
 resize_isst(struct isst_s *isst)
 {
@@ -82,13 +86,56 @@ resize_isst(struct isst_s *isst)
 #endif
 }
 
+static void
+LoadG(AG_Event *event)
+{
+	AG_FileDlg *fd = AG_SELF();
+	char *file = AG_STRING(1);
+	AG_FileType *ft = AG_PTR(2);
+	int argc = 2;
+	char **argv;
+	argv = (char **)bu_malloc(sizeof(char *)*(argc + 1), "isst sdl");
+	argv[0] = "tank";
+	argv[1] = NULL;
+
+	load_g(isst->tie, file, argc-1, (const char **)argv, &(isst->meshes));
+	bu_free((genptr_t)argv, "isst sdl");
+
+}
+
+static void
+CreateLoadWindow(void)
+{
+	AG_Window *win;
+	AG_FileDlg *fd;
+	AG_FileType *ft;
+	AG_Box *box;
+
+	win = AG_WindowNew(0);
+	AG_WindowSetCaption(win, "Loading BRL-CAD .g Database");
+	fd = AG_FileDlgNew(win, AG_FILEDLG_EXPAND|AG_FILEDLG_CLOSEWIN);
+	AG_FileDlgSetDirectoryMRU(fd, "/home/cyapp", "./cadtoplevel");
+	AG_FileDlgSetFilenameS(fd, "");
+	ft = AG_FileDlgAddType(fd, "BRL-CAD Database", "*.g", LoadG, NULL);
+	AG_WindowSetPosition(win, AG_WINDOW_MIDDLE_LEFT, 0);
+	AG_WindowShow(win);
+}
+
 struct isst_s *
 prep_isst(int argc, const char **argv)
 {
-    struct isst_s *isst;
+    
     isst = (struct isst_s *)malloc(sizeof(struct isst_s));
     isst->tie = (struct tie_s *)bu_calloc(1,sizeof(struct tie_s), "tie");
-    load_g(isst->tie, argv[0], argc-1, argv+1, &(isst->meshes));
+    if (argc < 2) {
+    	AG_InitCore("agar-dialog",0);
+    	AG_InitGraphics(NULL);
+	CreateLoadWindow();
+	AG_EventLoop();
+	AG_Destroy();
+    } else {
+       load_g(isst->tie, argv[0], argc-1, argv+1, &(isst->meshes));
+    }
     TIENET_BUFFER_INIT(isst->buffer_image);
     render_camera_init(&isst->camera, bu_avail_cpus());
     isst->camera.type = RENDER_CAMERA_PERSPECTIVE;
@@ -176,11 +223,11 @@ main(int argc, char **argv)
 	printf("Bad screen resolution specified\n");
 	return EXIT_FAILURE;
     }
-    if(argc < 2) {
+/*    if(argc < 2) {
 	printf("Must give .g file and list of tops\n");
 	return EXIT_FAILURE;
     }
-
+*/
     SDL_Init (SDL_INIT_VIDEO | SDL_INIT_TIMER);
     atexit (SDL_Quit);
 
