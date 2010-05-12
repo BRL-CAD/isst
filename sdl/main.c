@@ -42,8 +42,10 @@
 # include <SDL_opengl.h>
 #endif
 
-#include <agar/core.h>
-#include <agar/gui.h>
+#ifdef HAVE_AGAR
+# include <agar/core.h>
+# include <agar/gui.h>
+#endif
 
 #include <tie.h>
 #include <adrt.h>
@@ -86,6 +88,7 @@ resize_isst(struct isst_s *isst)
 #endif
 }
 
+#ifdef HAVE_AGAR
 static void
 LoadG(AG_Event *event)
 {
@@ -120,6 +123,7 @@ CreateLoadWindow(void)
 	AG_WindowSetPosition(win, AG_WINDOW_MIDDLE_LEFT, 0);
 	AG_WindowShow(win);
 }
+#endif
 
 struct isst_s *
 prep_isst(int argc, const char **argv)
@@ -128,11 +132,15 @@ prep_isst(int argc, const char **argv)
     isst = (struct isst_s *)malloc(sizeof(struct isst_s));
     isst->tie = (struct tie_s *)bu_calloc(1,sizeof(struct tie_s), "tie");
     if (argc < 2) {
+#ifdef HAVE_AGAR
     	AG_InitCore("agar-dialog",0);
     	AG_InitGraphics(NULL);
 	CreateLoadWindow();
 	AG_EventLoop();
 	AG_Destroy();
+#else
+	bu_log("Something really bad happened\n");
+#endif
     } else {
        load_g(isst->tie, argv[0], argc-1, argv+1, &(isst->meshes));
     }
@@ -223,11 +231,13 @@ main(int argc, char **argv)
 	printf("Bad screen resolution specified\n");
 	return EXIT_FAILURE;
     }
-/*    if(argc < 2) {
+#ifndef HAVE_AGAR
+    if(argc < 2) {
 	printf("Must give .g file and list of tops\n");
 	return EXIT_FAILURE;
     }
-*/
+#endif
+
     SDL_Init (SDL_INIT_VIDEO | SDL_INIT_TIMER);
     atexit (SDL_Quit);
 

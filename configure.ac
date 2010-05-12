@@ -45,7 +45,13 @@ AC_SUBST(GL_LIBS)
 
 AGAR_CFLAGS=""
 AGAR_LIBS=""
-AC_ARG_WITH(agar, [  --with-agar=path        Specify location of the AGAR package], [AGAR_CFLAGS="-I$withval/include/agar"; AGAR_LIBS="-L$withval/lib -lag_gui -lag_core -lfreetype"])
+have_agar=no
+AC_ARG_WITH(agar, [  --with-agar=path        Specify location of the AGAR package], [
+		   have_agar=yes
+		   AGAR_CFLAGS="-I$withval/include/agar"
+		   AGAR_LIBS="-L$withval/lib -lag_gui -lag_core -lfreetype"
+		   AC_DEFINE(HAVE_AGAR,1,[AGAR])
+		   ])
 AC_SUBST(AGAR_CFLAGS)
 AC_SUBST(AGAR_LIBS)
 
@@ -83,3 +89,4 @@ AC_OUTPUT
 
 echo "I can has GTK+? ${HAVE_GTK2}"
 echo "I can has SDL? ${HAVE_SDL}"
+echo "I can has AGAR? ${have_agar}"
