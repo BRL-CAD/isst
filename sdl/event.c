@@ -117,9 +117,11 @@ do_loop(struct isst_s *isst)
 	int i;
 
 	isst->buffer_image.ind = 0;
+#ifdef HAVE_OPENGL
 	if(isst->ogl)
 	    paint_ogl(isst);
 	else
+#endif
 	    paint_sw(isst);
 
 	/* some FPS stuff */

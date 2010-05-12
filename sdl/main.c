@@ -185,12 +185,12 @@ int
 main(int argc, char **argv)
 {
     struct isst_s *isst;
-    int w = 800, h = 600, c, ogl = 0, sflags = SDL_HWSURFACE|SDL_DOUBLEBUF|SDL_RESIZABLE;
+    int w = 800, h = 600, c, ogl = 1, sflags = SDL_HWSURFACE|SDL_DOUBLEBUF|SDL_RESIZABLE|SDL_OPENGL;
 
     const char opts[] = 
 	/* or would it be better to */
 #ifdef HAVE_OPENGL
-	"fw:h:g";
+	"fw:h:s";
 #else
 	"fw:h:";
 #endif
@@ -206,9 +206,9 @@ main(int argc, char **argv)
 	    case 'h':
 		h = atoi(optarg);
 		break;
-	    case 'g':
-		sflags |= SDL_OPENGL;
-		ogl = 1;
+	    case 's':
+		sflags &= ~SDL_OPENGL;
+		ogl = 0;
 		break;
 	    case ':':
 	    case '?':
