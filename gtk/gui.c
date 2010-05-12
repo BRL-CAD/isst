@@ -137,7 +137,7 @@ paint_context()
      * with draw_cross_hairs ? */
     gdk_draw_rgb_image (isst_context->window, isst_context->style->fg_gc[GTK_STATE_NORMAL],
 	    0, 0, isst.context_width, isst.context_height, GDK_RGB_DITHER_NONE,
-	    isst.buffer_image.data, isst.context_width * 3);
+	    isst.buffer_image.data + sizeof(camera_tile_t), isst.context_width * 3);
     if (isst.mode == ISST_MODE_SHOTLINE)
 	draw_cross_hairs (isst.mouse_x, isst.mouse_y);
     gdk_window_thaw_updates ( GDK_WINDOW(isst_context->window) );

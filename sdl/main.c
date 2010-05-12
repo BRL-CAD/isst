@@ -55,6 +55,7 @@
 #include "isst.h"
 
 struct isst_s *isst;
+
 void
 resize_isst(struct isst_s *isst)
 {
@@ -168,7 +169,7 @@ paint_ogl(struct isst_s *isst)
     glColor3f(1,1,1);
     glEnable(GL_TEXTURE_2D);
     glBindTexture(GL_TEXTURE_2D, isst->texid);
-    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, isst->camera.w, isst->camera.h, GL_RGB, GL_UNSIGNED_BYTE, isst->buffer_image.data);
+    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, isst->camera.w, isst->camera.h, GL_RGB, GL_UNSIGNED_BYTE, isst->buffer_image.data + sizeof(camera_tile_t));
     glBegin(GL_TRIANGLE_STRIP);
     glTexCoord2d(0,0); glVertex3f(0,0,0);
     glTexCoord2d(0,1); glVertex3f(0,isst->r.h,0);
