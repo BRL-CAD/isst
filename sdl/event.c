@@ -69,8 +69,8 @@ move_strafe(struct isst_s * isst, double dist)
 void 
 move_float(struct isst_s * isst, double dist)
 {
-    isst->camera.pos.v[2] += dist;
-    isst->camera.focus.v[2] += dist;
+    isst->camera.pos.v[2] += 2*dist;
+    isst->camera.focus.v[2] += 2*dist;
 }
 
 void
@@ -117,7 +117,9 @@ do_loop(struct isst_s *isst)
     int fc = 0, showfps = 1;
     double dt = 1.0, dt2 = 0.0;
     double mouse_sensitivity = 0.1;
+    double val = 1;
     int vel[3] = { 0, 0, 0 };
+    char buf[BUFSIZ];
 
     gettimeofday(ts, NULL);
 
@@ -176,7 +178,9 @@ do_loop(struct isst_s *isst)
 			case '2': render_shader_init(&isst->camera.render, "normal", NULL); break;
 			case '3': render_shader_init(&isst->camera.render, "depth", NULL); break;
 			case '4': render_shader_init(&isst->camera.render, "component", NULL); break;
-			case '=': render_shader_init(&isst->camera.render, "myplugin", NULL); break;
+			case '=': snprintf(buf, BUFSIZ, "%f", val); render_shader_init(&isst->camera.render, "myplugin", buf); break;
+			case '[': val -= 0.1; snprintf(buf, BUFSIZ, "%f", val); render_shader_init(&isst->camera.render, "myplugin", buf); break;
+			case ']': val += 0.1; snprintf(buf, BUFSIZ, "%f", val); render_shader_init(&isst->camera.render, "myplugin", buf); break;
 			case SDLK_DELETE:
 			case '-':
 				  {
@@ -185,7 +189,8 @@ do_loop(struct isst_s *isst)
 					  printf("Failed unloading plugin");
 					  exit(-1);
 				      }
-				      render_shader_init(&isst->camera.render, render_shader_load_plugin(".libs/libmyplugin.0.dylib"), NULL);
+				      snprintf(buf, BUFSIZ, "%f", val); 
+				      render_shader_init(&isst->camera.render, render_shader_load_plugin(".libs/libmyplugin.0.dylib"), buf);
 				  }
 				  break;
 			case SDLK_UP:
@@ -199,6 +204,7 @@ do_loop(struct isst_s *isst)
 			case ' ': vel[2] = 1; break;
 			case 'v': vel[2] = -1; break;
 			case '0': zero_view(isst); break;
+			case 'z': isst->gs = !isst->gs; resize_isst(isst); break;
 				  /* TODO: more keys for nifty things like changing mode or pulling up gui bits or something */
 		    }
 		    break;
@@ -222,7 +228,7 @@ do_loop(struct isst_s *isst)
 			case 1:
 			    break;
 			case 4:
-			    look(isst, mouse_sensitivity * dt * e.motion.xrel, mouse_sensitivity * dt * e.motion.yrel);
+			    look(isst, isst->w / isst->camera.w * mouse_sensitivity * dt * e.motion.xrel, isst->h / isst->camera.h * mouse_sensitivity * dt * e.motion.yrel);
 			    break;
 		    }
 		    break;

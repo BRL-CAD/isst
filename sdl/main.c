@@ -61,8 +61,12 @@ resize_isst(struct isst_s *isst)
     isst->r.w = isst->tile.size_x = isst->camera.w = isst->w;
     isst->r.h = isst->tile.size_y = isst->camera.h = isst->h;
     isst->r.x = isst->r.y = isst->tile.orig_x = isst->tile.orig_y = 0;
+    if(!isst->gs) {
+	isst->camera.w = isst->tile.size_x = 320;
+	isst->camera.h = isst->tile.size_y = 240;
+    }
     isst->tile.format = RENDER_CAMERA_BIT_DEPTH_24;
-    TIENET_BUFFER_SIZE(isst->buffer_image, 3 * isst->w * isst->h);
+    TIENET_BUFFER_SIZE(isst->buffer_image, 3 * isst->camera.w * isst->camera.h);
     isst->screen = SDL_SetVideoMode (isst->w, isst->h, 24, isst->sflags);
     if(isst->screen == NULL) {
 	printf("Failed to generate display context\n");
@@ -73,11 +77,11 @@ resize_isst(struct isst_s *isst)
 	glClearColor (0.0, 0, 0.0, 1);
 	glBindTexture (GL_TEXTURE_2D, isst->texid);
 	glPixelStorei (GL_UNPACK_ALIGNMENT, 1);
-	glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexEnvf (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-	isst->texdata = malloc(isst->r.w * isst->r.h * 3);
-	glTexImage2D (GL_TEXTURE_2D, 0, GL_RGB, isst->r.w, isst->r.h, 0, GL_RGB, GL_UNSIGNED_BYTE, isst->texdata);
+	isst->texdata = malloc(isst->camera.w * isst->camera.h * 3);
+	glTexImage2D (GL_TEXTURE_2D, 0, GL_RGB, isst->camera.w, isst->camera.h, 0, GL_RGB, GL_UNSIGNED_BYTE, isst->texdata);
 	glDisable(GL_LIGHTING);
 	glViewport(0,0,isst->r.w, isst->r.h);
 	glMatrixMode (GL_PROJECTION);
@@ -103,7 +107,6 @@ LoadG(AG_Event *event)
 
 	load_g(isst->tie, file, argc-1, (const char **)argv, &(isst->meshes));
 	bu_free((genptr_t)argv, "isst sdl");
-
 }
 
 static void
@@ -165,7 +168,7 @@ paint_ogl(struct isst_s *isst)
     glColor3f(1,1,1);
     glEnable(GL_TEXTURE_2D);
     glBindTexture(GL_TEXTURE_2D, isst->texid);
-    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, isst->r.w, isst->r.h, GL_RGB, GL_UNSIGNED_BYTE, isst->buffer_image.data);
+    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, isst->camera.w, isst->camera.h, GL_RGB, GL_UNSIGNED_BYTE, isst->buffer_image.data);
     glBegin(GL_TRIANGLE_STRIP);
     glTexCoord2d(0,0); glVertex3f(0,0,0);
     glTexCoord2d(0,1); glVertex3f(0,isst->r.h,0);

@@ -24,6 +24,7 @@ adrt_plugin_free(render_t *r)
 void
 init(render_t *r, char *usr)
 {
+    printf("value passed to shader: %s\n", usr);
     r->work = adrt_plugin_work;
     r->free = adrt_plugin_free;
 }
