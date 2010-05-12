@@ -59,12 +59,24 @@ struct isst_s *isst;
 void
 resize_isst(struct isst_s *isst)
 {
-    isst->r.w = isst->tile.size_x = isst->camera.w = isst->w;
-    isst->r.h = isst->tile.size_y = isst->camera.h = isst->h;
+    isst->r.w = isst->w;
+    isst->r.h = isst->h;
     isst->r.x = isst->r.y = isst->tile.orig_x = isst->tile.orig_y = 0;
-    if(!isst->gs) {
-	isst->camera.w = isst->tile.size_x = 320;
-	isst->camera.h = isst->tile.size_y = 240;
+    switch(isst->gs) {
+	    case 0:
+		isst->camera.w = isst->tile.size_x = isst->w;
+		isst->camera.h = isst->tile.size_y = isst->h;
+		break;
+	    case 1:
+		isst->camera.w = isst->tile.size_x = 320;
+		isst->camera.h = isst->tile.size_y = 240;
+		break;
+	    case 2:
+		isst->camera.w = isst->tile.size_x = 40;
+		isst->camera.h = isst->tile.size_y = 30;
+		break;
+	    default:
+		bu_log("Unknown level...\n");
     }
     isst->tile.format = RENDER_CAMERA_BIT_DEPTH_24;
     TIENET_BUFFER_SIZE(isst->buffer_image, 3 * isst->camera.w * isst->camera.h);

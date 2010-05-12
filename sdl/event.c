@@ -206,7 +206,7 @@ do_loop(struct isst_s *isst)
 			case ' ': vel[2] = 1; break;
 			case 'v': vel[2] = -1; break;
 			case '0': zero_view(isst); break;
-			case 'z': isst->gs = !isst->gs; resize_isst(isst); break;
+			case 'z': isst->gs++; if(isst->gs >= 3) isst->gs = 0; resize_isst(isst); break;
 				  /* TODO: more keys for nifty things like changing mode or pulling up gui bits or something */
 		    }
 		    break;
