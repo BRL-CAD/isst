@@ -73,6 +73,15 @@ move_float(struct isst_s * isst, double dist)
     isst->camera.focus.v[2] += dist;
 }
 
+void
+zero_view(struct isst_s *isst) 
+{
+    vect_t vec;
+    VSUB2(vec, isst->tie->mid, isst->camera.pos.v);
+    VUNITIZE(vec);
+    VADD2(isst->camera.focus.v, isst->camera.pos.v, vec);
+}
+
 void 
 look(struct isst_s * isst, double x, double y)
 {
@@ -171,7 +180,6 @@ do_loop(struct isst_s *isst)
 			case SDLK_DELETE:
 			case '-':
 				  {
-				      char *shadername = NULL;
 				      printf("\nReloading plugin\n");
 				      if(render_shader_unload_plugin(&isst->camera.render, "myplugin")) {
 					  printf("Failed unloading plugin");
@@ -190,6 +198,7 @@ do_loop(struct isst_s *isst)
 			case 'w': vel[0] = -1; break;
 			case ' ': vel[2] = 1; break;
 			case 'v': vel[2] = -1; break;
+			case '0': zero_view(isst); break;
 				  /* TODO: more keys for nifty things like changing mode or pulling up gui bits or something */
 		    }
 		    break;
