@@ -28,9 +28,6 @@
 #endif
 
 #include <stdio.h>
-#ifdef HAVE_SYS_TIME_H
-# include <sys/time.h>
-#endif
 
 #include <SDL.h>
 
@@ -113,7 +110,7 @@ int
 do_loop(struct isst_s *isst)
 {
     SDL_Event e;
-    struct timeval ts[2];
+    double ts[2];
     int fc = 0, showfps = 1;
     double dt = 1.0, dt2 = 0.0;
     double mouse_sensitivity = 0.1;
@@ -121,7 +118,7 @@ do_loop(struct isst_s *isst)
     int vel[3] = { 0, 0, 0 };
     char buf[BUFSIZ];
 
-    gettimeofday(ts, NULL);
+    ts[0] = SDL_GetTicks();
 
     while (1)
     {   
@@ -137,17 +134,22 @@ do_loop(struct isst_s *isst)
 
 	/* some FPS stuff */
 	fc++;
-	gettimeofday(ts+1, NULL);
-	dt = (((double)ts[1].tv_sec+(double)ts[1].tv_usec/(double)1e6) - ((double)ts[0].tv_sec+(double)ts[0].tv_usec/(double)1e6));
+	ts[1] = SDL_GetTicks();
+	dt = 0.001 * (ts[1] - ts[0]);
 	dt2 += dt;
+	ts[0] = SDL_GetTicks();
 
-	gettimeofday(ts, NULL);
 	if(showfps && dt2 > 0.5) {
 	    printf("  \r%g FPS", (double)fc/dt2);
 	    fflush(stdout);
 	    fc=0;
 	    dt2 = 0;
 	}
+
+#define MAXFPS 10.0
+	if(dt < 1.0/MAXFPS)
+	    SDL_Delay(1000 * 1.0/MAXFPS - dt);
+#undef MAXFPS
 
 	while(SDL_PollEvent (&e))
 	    switch (e.type)
