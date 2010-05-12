@@ -69,11 +69,11 @@ resize_isst(struct isst_s *isst)
 		break;
 	    case 1:
 		isst->camera.w = isst->tile.size_x = 320;
-		isst->camera.h = isst->tile.size_y = 240;
+		isst->camera.h = isst->tile.size_y = isst->camera.w * isst->h / isst->w;
 		break;
 	    case 2:
 		isst->camera.w = isst->tile.size_x = 40;
-		isst->camera.h = isst->tile.size_y = 30;
+		isst->camera.h = isst->tile.size_y = isst->camera.w * isst->h / isst->w;
 		break;
 	    default:
 		bu_log("Unknown level...\n");
