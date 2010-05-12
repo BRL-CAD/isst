@@ -43,6 +43,12 @@ AM_PATH_OPENGL(AC_DEFINE(HAVE_OPENGL,,OpenGL exists), AC_MSG_WARN(Cannot find Op
 AC_SUBST(GL_CFLAGS)
 AC_SUBST(GL_LIBS)
 
+AGAR_CFLAGS=""
+AGAR_LIBS=""
+AC_ARG_WITH(agar, [  --with-agar=path        Specify location of the AGAR package], [AGAR_CFLAGS="-I$withval/include/agar"; AGAR_LIBS="-L$withval/lib -lag_gui -lag_core -lfreetype"])
+AC_SUBST(AGAR_CFLAGS)
+AC_SUBST(AGAR_LIBS)
+
 AC_MSG_CHECKING(whether to compile for debugging)
 want_debug=no
 AC_ARG_ENABLE(debug,
