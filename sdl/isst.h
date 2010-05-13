@@ -32,6 +32,7 @@ struct isst_s {
     struct SDL_Rect r;
     struct SDL_Surface *screen;
     int ogl, sflags, w, h, gs;
+    double dt, fps;
 #ifdef HAVE_OPENGL
     int texid;
     void *texdata;
@@ -39,16 +40,10 @@ struct isst_s {
 };
 
 void resize_isst(struct isst_s *isst);
-
 struct isst_s * prep_isst(int argc, const char **argv);
-
 void paint_ogl(struct isst_s *isst);
-
 void paint_sw(struct isst_s *isst);
-
 int do_loop(struct isst_s *isst);
-
-
 
 /*
  * Local Variables:

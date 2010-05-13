@@ -44,7 +44,7 @@ move_walk(struct isst_s * isst, double dist)
     vect_t vec;
     VSUB2(vec, isst->camera.focus.v, isst->camera.pos.v);
     VUNITIZE(vec);
-    VSCALE(vec, vec, dist * isst->tie->radius);
+    VSCALE(vec, vec, isst->dt * dist * isst->tie->radius);
     VADD2(isst->camera.pos.v, isst->camera.pos.v, vec);
     if(dist < 0) VSCALE(vec, vec, -1);
     VADD2(isst->camera.focus.v, isst->camera.pos.v, vec);
@@ -58,7 +58,7 @@ move_strafe(struct isst_s * isst, double dist)
     VSUB2(dir, isst->camera.focus.v, isst->camera.pos.v);
     VUNITIZE(dir);
     VCROSS(vec, dir, up);
-    VSCALE(vec, vec, dist * isst->tie->radius);
+    VSCALE(vec, vec, isst->dt * dist * isst->tie->radius);
     VADD2(isst->camera.pos.v, isst->camera.pos.v, vec);
     VADD2(isst->camera.focus.v, isst->camera.pos.v, dir);
 }
@@ -66,8 +66,8 @@ move_strafe(struct isst_s * isst, double dist)
 void 
 move_float(struct isst_s * isst, double dist)
 {
-    isst->camera.pos.v[2] += 2*dist;
-    isst->camera.focus.v[2] += 2*dist;
+    isst->camera.pos.v[2] += 2*isst->dt*dist;
+    isst->camera.focus.v[2] += 2*isst->dt*dist;
 }
 
 void
@@ -89,11 +89,8 @@ look(struct isst_s * isst, double x, double y)
     VSUB2(vec, isst->camera.pos.v, isst->camera.focus.v);
     VUNITIZE(vec);
     AZEL_FROM_V3DIR(az, el, vec);
-    az *= -DEG2RAD;
-    el *= -DEG2RAD;
-
-    az -= 0.5*x;
-    el -= 0.5*y;
+    az = az * -DEG2RAD - x;
+    el = el * -DEG2RAD - y;
 
     /* clamp to sane values */
     while(az > 2*M_PI) az -= 2*M_PI;
@@ -112,12 +109,14 @@ do_loop(struct isst_s *isst)
     SDL_Event e;
     double ts[2];
     int fc = 0, showfps = 1;
-    double dt = 1.0, dt2 = 0.0;
-    double mouse_sensitivity = 0.1;
+    double dt2 = 0.0;
+    double mouse_sensitivity = 0.002;
     double val = 1;
     int vel[3] = { 0, 0, 0 };
     char buf[BUFSIZ];
 
+    isst->dt = 1;
+    isst->fps = 1;
     ts[0] = SDL_GetTicks();
 
     while (1)
@@ -135,21 +134,26 @@ do_loop(struct isst_s *isst)
 	/* some FPS stuff */
 	fc++;
 	ts[1] = SDL_GetTicks();
-	dt = 0.001 * (ts[1] - ts[0]);
-	dt2 += dt;
+	isst->dt = 0.001 * (ts[1] - ts[0]);
+	dt2 += isst->dt;
 	ts[0] = SDL_GetTicks();
 
-	if(showfps && dt2 > 0.5) {
-	    printf("  \r%g FPS", (double)fc/dt2);
-	    fflush(stdout);
+	if(dt2 > 0.5) {
+	    isst->fps = (double)fc/dt2;
 	    fc=0;
 	    dt2 = 0;
 	}
+	if(showfps) {
+	    printf("  \r%g FPS", isst->fps);
+	    fflush(stdout);
+	}
 
+#if 0
 #define MAXFPS 10.0
-	if(dt < 1.0/MAXFPS)
-	    SDL_Delay(1000 * 1.0/MAXFPS - dt);
+	if(isst->dt < 1.0/MAXFPS)
+	    SDL_Delay(1000 * 1.0/MAXFPS - isst->dt);
 #undef MAXFPS
+#endif
 
 	while(SDL_PollEvent (&e))
 	    switch (e.type)
@@ -230,15 +234,15 @@ do_loop(struct isst_s *isst)
 			case 1:
 			    break;
 			case 4:
-			    look(isst, isst->w / isst->camera.w * mouse_sensitivity * dt * e.motion.xrel, isst->h / isst->camera.h * mouse_sensitivity * dt * e.motion.yrel);
+			    look(isst, mouse_sensitivity * e.motion.xrel, mouse_sensitivity * e.motion.yrel);
 			    break;
 		    }
 		    break;
 
 	    }
-	if(vel[0] != 0) move_strafe(isst, dt*(double)vel[0]);
-	if(vel[1] != 0) move_walk(isst, dt*(double)vel[1]);
-	if(vel[2] != 0) move_float(isst, dt*(double)vel[2]);
+	if(vel[0] != 0) move_strafe(isst, (double)vel[0]);
+	if(vel[1] != 0) move_walk(isst, (double)vel[1]);
+	if(vel[2] != 0) move_float(isst, (double)vel[2]);
     }
 }
 
