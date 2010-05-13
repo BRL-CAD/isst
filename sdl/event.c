@@ -113,7 +113,7 @@ do_loop(struct isst_s *isst)
     double mouse_sensitivity = 0.002;
     double val = 1;
     int vel[3] = { 0, 0, 0 };
-    char buf[BUFSIZ];
+    char buf[BUFSIZ], cmdbuf[BUFSIZ], *cmd;
 
     isst->dt = 1;
     isst->fps = 1;
@@ -143,7 +143,7 @@ do_loop(struct isst_s *isst)
 	    fc=0;
 	    dt2 = 0;
 	}
-	if(showfps) {
+	if(showfps && isst->ui == 0) {
 	    printf("  \r%g FPS", isst->fps);
 	    fflush(stdout);
 	}
@@ -155,96 +155,119 @@ do_loop(struct isst_s *isst)
 #undef MAXFPS
 #endif
 
-	while(SDL_PollEvent (&e))
-	    switch (e.type)
-	    {
-		case SDL_VIDEORESIZE:
-		    isst->w = e.resize.w;
-		    isst->h = e.resize.h;
-		    resize_isst(isst);
-		    break;
-		case SDL_KEYDOWN:
-		    switch (tolower (e.key.keysym.sym))
-		    {
-			case 'f':
-			    if(isst->sflags&SDL_FULLSCREEN)
-				isst->sflags &= ~SDL_FULLSCREEN;
-			    else
-				isst->sflags |= SDL_FULLSCREEN;
-			    resize_isst(isst);
-			    break;
-			case 'x':
-			case 'q':
-			case SDLK_ESCAPE:
-			    SDL_Quit ();
-			    printf("\n");
-			    return EXIT_SUCCESS;
-			    break;
-			case '1': render_shader_init(&isst->camera.render, "phong", NULL); break;
-			case '2': render_shader_init(&isst->camera.render, "normal", NULL); break;
-			case '3': render_shader_init(&isst->camera.render, "depth", NULL); break;
-			case '4': render_shader_init(&isst->camera.render, "component", NULL); break;
-			case '=': snprintf(buf, BUFSIZ, "%f", val); render_shader_init(&isst->camera.render, "myplugin", buf); break;
-			case '[': val -= 0.1; snprintf(buf, BUFSIZ, "%f", val); render_shader_init(&isst->camera.render, "myplugin", buf); break;
-			case ']': val += 0.1; snprintf(buf, BUFSIZ, "%f", val); render_shader_init(&isst->camera.render, "myplugin", buf); break;
-			case SDLK_RETURN: isst->ui = !isst->ui; break;
-			case SDLK_DELETE:
-			case '-':
-					  /* this stuff needs a lot of fixing */
-					  printf("\nReloading plugin\n");
-					  if(render_shader_unload_plugin(&isst->camera.render, "myplugin")) {
-					      printf("Failed unloading plugin");
-					      exit(-1);
-					  }
-					  snprintf(buf, BUFSIZ, "%f", val); 
-					  render_shader_init(&isst->camera.render, render_shader_load_plugin(".libs/libmyplugin.0.dylib"), buf);
-					  break;
-			case SDLK_UP:
-			case 'e': vel[1] = 1; break;
-			case SDLK_DOWN:
-			case 'd': vel[1] = -1; break;
-			case SDLK_RIGHT:
-			case 'r': vel[0] = 1; break;
-			case SDLK_LEFT:
-			case 'w': vel[0] = -1; break;
-			case ' ': vel[2] = 1; break;
-			case 'v': vel[2] = -1; break;
-			case '0': zero_view(isst); break;
-			case 'z': isst->gs++; if(isst->gs >= 3) isst->gs = 0; resize_isst(isst); break;
-				  /* TODO: more keys for nifty things like changing mode or pulling up gui bits or something */
-		    }
-		    break;
-		case SDL_KEYUP:
-		    switch (tolower (e.key.keysym.sym))
-		    {
-			case SDLK_UP:
-			case SDLK_DOWN: 
-			case 'e':
-			case 'd': vel[1] = 0; break;
-			case SDLK_RIGHT:
-			case SDLK_LEFT:
-			case 'r':
-			case 'w': vel[0] = 0; break;
-			case ' ':
-			case 'v': vel[2] = 0; break;
-		    }
-		    break;
-		case SDL_MOUSEMOTION:
-		    switch(e.motion.state) {
-			case 1:
-			    break;
-			case 4:
-			    look(isst, mouse_sensitivity * e.motion.xrel, mouse_sensitivity * e.motion.yrel);
-			    break;
-		    }
-		    break;
+	while(SDL_PollEvent (&e)) {
+	    if(isst->ui == 0) {
+		switch (e.type)
+		{
+		    case SDL_VIDEORESIZE:
+			isst->w = e.resize.w;
+			isst->h = e.resize.h;
+			resize_isst(isst);
+			break;
+		    case SDL_KEYDOWN:
+			switch (tolower (e.key.keysym.sym))
+			{
+			    case 'f':
+				if(isst->sflags&SDL_FULLSCREEN)
+				    isst->sflags &= ~SDL_FULLSCREEN;
+				else
+				    isst->sflags |= SDL_FULLSCREEN;
+				resize_isst(isst);
+				break;
+			    case SDLK_F12:
+				SDL_Quit ();
+				printf("\n");
+				return EXIT_SUCCESS;
+				break;
+			    case '1': render_shader_init(&isst->camera.render, "phong", NULL); break;
+			    case '2': render_shader_init(&isst->camera.render, "normal", NULL); break;
+			    case '3': render_shader_init(&isst->camera.render, "depth", NULL); break;
+			    case '4': render_shader_init(&isst->camera.render, "component", NULL); break;
+			    case '=': snprintf(buf, BUFSIZ, "%f", val); render_shader_init(&isst->camera.render, "myplugin", buf); break;
+			    case '[': val -= 0.1; snprintf(buf, BUFSIZ, "%f", val); render_shader_init(&isst->camera.render, "myplugin", buf); break;
+			    case ']': val += 0.1; snprintf(buf, BUFSIZ, "%f", val); render_shader_init(&isst->camera.render, "myplugin", buf); break;
+			    case SDLK_ESCAPE:
+			    case SDLK_RETURN: cmd = cmdbuf; isst->ui = !isst->ui; printf("\n"); break;
+			    case SDLK_DELETE:
+			    case '-':
+					      /* this stuff needs a lot of fixing */
+					      printf("\nReloading plugin\n");
+					      if(render_shader_unload_plugin(&isst->camera.render, "myplugin")) {
+						  printf("Failed unloading plugin");
+						  exit(-1);
+					      }
+					      snprintf(buf, BUFSIZ, "%f", val); 
+					      render_shader_init(&isst->camera.render, render_shader_load_plugin(".libs/libmyplugin.0.dylib"), buf);
+					      break;
+			    case SDLK_UP:
+			    case 'e': vel[1] = 1; break;
+			    case SDLK_DOWN:
+			    case 'd': vel[1] = -1; break;
+			    case SDLK_RIGHT:
+			    case 'r': vel[0] = 1; break;
+			    case SDLK_LEFT:
+			    case 'w': vel[0] = -1; break;
+			    case ' ': vel[2] = 1; break;
+			    case 'v': vel[2] = -1; break;
+			    case '0': zero_view(isst); break;
+			    case 'z': isst->gs++; if(isst->gs >= 3) isst->gs = 0; resize_isst(isst); break;
+				      /* TODO: more keys for nifty things like changing mode or pulling up gui bits or something */
+			}
+			break;
+		    case SDL_KEYUP:
+			switch (tolower (e.key.keysym.sym))
+			{
+			    case SDLK_UP:
+			    case SDLK_DOWN: 
+			    case 'e':
+			    case 'd': vel[1] = 0; break;
+			    case SDLK_RIGHT:
+			    case SDLK_LEFT:
+			    case 'r':
+			    case 'w': vel[0] = 0; break;
+			    case ' ':
+			    case 'v': vel[2] = 0; break;
+			}
+			break;
+		    case SDL_MOUSEMOTION:
+			switch(e.motion.state) {
+			    case 1:
+				break;
+			    case 4:
+				look(isst, mouse_sensitivity * e.motion.xrel, mouse_sensitivity * e.motion.yrel);
+				break;
+			}
+			break;
 
+		}
+		if(vel[0] != 0) move_strafe(isst, (double)vel[0]);
+		if(vel[1] != 0) move_walk(isst, (double)vel[1]);
+		if(vel[2] != 0) move_float(isst, (double)vel[2]);
+	    } else {	/* control panel mode */
+		switch(e.type) {
+		    case SDL_KEYDOWN:
+			switch(e.key.keysym.sym) {
+			    case SDLK_F12:
+				SDL_Quit();
+				printf("\n");
+				return EXIT_SUCCESS;
+			    case SDLK_ESCAPE:
+				isst->ui = 0;
+				break;
+			    case SDLK_RETURN:
+				*cmd = 0;
+				printf("\nExecute command: \"%s\"\n", cmdbuf);
+				isst->ui = 0;
+				break;
+			    default:
+				*cmd++ = e.key.keysym.sym;
+				fflush(stdout);
+			}
+		}
 	    }
-	if(vel[0] != 0) move_strafe(isst, (double)vel[0]);
-	if(vel[1] != 0) move_walk(isst, (double)vel[1]);
-	if(vel[2] != 0) move_float(isst, (double)vel[2]);
-	if(isst->ui && isst->uic < 0.99999) { isst->uic += 0.5*isst->dt; if(isst->uic > .25) isst->uic = .25; }
-	if(!isst->ui && isst->uic > 0.00001) { isst->uic -= 0.5*isst->dt; if(isst->uic < 0.0) isst->uic = 0.0; }
+	}
+	if(isst->ui && isst->uic < 0.99999) { isst->uic += 2*isst->dt; if(isst->uic > 1.0) isst->uic = 1; }
+	if(!isst->ui && isst->uic > 0.00001) { isst->uic -= 2*isst->dt; if(isst->uic < 0.0) isst->uic = 0; }
     }
 }
 

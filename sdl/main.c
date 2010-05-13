@@ -188,10 +188,17 @@ paint_ogl(struct isst_s *isst)
     glBindTexture(GL_TEXTURE_2D, isst->texid);
     glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, isst->camera.w, isst->camera.h, GL_RGB, GL_UNSIGNED_BYTE, isst->buffer_image.data + sizeof(camera_tile_t));
     glBegin(GL_TRIANGLE_STRIP);
-    glTexCoord2d(0,0); glVertex3f(isst->r.w*isst->uic,isst->r.h*isst->uic,0);
-    glTexCoord2d(0,1); glVertex3f(isst->r.w*isst->uic,isst->r.h*(1-isst->uic),0);
-    glTexCoord2d(1,0); glVertex3f(isst->r.w,0,0);
-    glTexCoord2d(1,1); glVertex3f(isst->r.w,isst->r.h,0);
+#if 0
+    glTexCoord2d(0, 0); glVertex3f(isst->r.w*isst->uic*0.25,	isst->r.h*isst->uic*0.25,	0);
+    glTexCoord2d(0, 1); glVertex3f(isst->r.w*isst->uic*0.25,	isst->r.h*(1-isst->uic*0.25),	0);
+    glTexCoord2d(1, 0); glVertex3f(isst->r.w,			0,				0);
+    glTexCoord2d(1, 1); glVertex3f(isst->r.w,			isst->r.h,			0);
+#else
+    glTexCoord2d(0, 0); glVertex3f(isst->r.w*isst->uic*0.25,	0,				0);
+    glTexCoord2d(0, 1); glVertex3f(isst->r.w*isst->uic*0.25,	isst->r.h*(.75+.25*(1-isst->uic)),	0);
+    glTexCoord2d(1, 0); glVertex3f(isst->r.w,			0,				0);
+    glTexCoord2d(1, 1); glVertex3f(isst->r.w,			isst->r.h*(.75+.25*(1-isst->uic)),	0);
+#endif
     glEnd();
     SDL_GL_SwapBuffers();
 #endif
