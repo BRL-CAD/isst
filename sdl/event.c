@@ -135,6 +135,14 @@ do_loop(struct isst_s *isst)
 	fc++;
 	ts[1] = SDL_GetTicks();
 	isst->dt = 0.001 * (ts[1] - ts[0]);
+
+#define MAXFPS 30.0
+	if(isst->dt < 1.0/MAXFPS) {
+	    SDL_Delay(1000 * 1.0/MAXFPS - isst->dt);
+	    isst->dt += 1.0/MAXFPS - isst->dt;
+	}
+#undef MAXFPS
+
 	dt2 += isst->dt;
 	ts[0] = SDL_GetTicks();
 
@@ -147,13 +155,6 @@ do_loop(struct isst_s *isst)
 	    printf("  \r%g FPS", isst->fps);
 	    fflush(stdout);
 	}
-
-#if 0
-#define MAXFPS 10.0
-	if(isst->dt < 1.0/MAXFPS)
-	    SDL_Delay(1000 * 1.0/MAXFPS - isst->dt);
-#undef MAXFPS
-#endif
 
 	while(SDL_PollEvent (&e)) {
 	    if(isst->ui == 0) {
@@ -187,7 +188,7 @@ do_loop(struct isst_s *isst)
 			    case '[': val -= 0.1; snprintf(buf, BUFSIZ, "%f", val); render_shader_init(&isst->camera.render, "myplugin", buf); break;
 			    case ']': val += 0.1; snprintf(buf, BUFSIZ, "%f", val); render_shader_init(&isst->camera.render, "myplugin", buf); break;
 			    case SDLK_ESCAPE:
-			    case SDLK_RETURN: cmd = cmdbuf; isst->ui = !isst->ui; printf("\n"); break;
+			    case SDLK_RETURN: VSETALL(vel, 0); cmd = cmdbuf; isst->ui = !isst->ui; printf("\n"); break;
 			    case SDLK_DELETE:
 			    case '-':
 					      /* this stuff needs a lot of fixing */
@@ -240,9 +241,6 @@ do_loop(struct isst_s *isst)
 			break;
 
 		}
-		if(vel[0] != 0) move_strafe(isst, (double)vel[0]);
-		if(vel[1] != 0) move_walk(isst, (double)vel[1]);
-		if(vel[2] != 0) move_float(isst, (double)vel[2]);
 	    } else {	/* control panel mode */
 		switch(e.type) {
 		    case SDL_KEYDOWN:
@@ -266,6 +264,9 @@ do_loop(struct isst_s *isst)
 		}
 	    }
 	}
+	if(vel[0] != 0) move_strafe(isst, (double)vel[0]);
+	if(vel[1] != 0) move_walk(isst, (double)vel[1]);
+	if(vel[2] != 0) move_float(isst, (double)vel[2]);
 	if(isst->ui && isst->uic < 0.99999) { isst->uic += 2*isst->dt; if(isst->uic > 1.0) isst->uic = 1; }
 	if(!isst->ui && isst->uic > 0.00001) { isst->uic -= 2*isst->dt; if(isst->uic < 0.0) isst->uic = 0; }
     }
