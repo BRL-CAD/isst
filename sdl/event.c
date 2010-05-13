@@ -187,18 +187,18 @@ do_loop(struct isst_s *isst)
 			case '=': snprintf(buf, BUFSIZ, "%f", val); render_shader_init(&isst->camera.render, "myplugin", buf); break;
 			case '[': val -= 0.1; snprintf(buf, BUFSIZ, "%f", val); render_shader_init(&isst->camera.render, "myplugin", buf); break;
 			case ']': val += 0.1; snprintf(buf, BUFSIZ, "%f", val); render_shader_init(&isst->camera.render, "myplugin", buf); break;
+			case SDLK_RETURN: isst->ui = !isst->ui; break;
 			case SDLK_DELETE:
 			case '-':
-				  {
-				      printf("\nReloading plugin\n");
-				      if(render_shader_unload_plugin(&isst->camera.render, "myplugin")) {
-					  printf("Failed unloading plugin");
-					  exit(-1);
-				      }
-				      snprintf(buf, BUFSIZ, "%f", val); 
-				      render_shader_init(&isst->camera.render, render_shader_load_plugin(".libs/libmyplugin.0.dylib"), buf);
-				  }
-				  break;
+					  /* this stuff needs a lot of fixing */
+					  printf("\nReloading plugin\n");
+					  if(render_shader_unload_plugin(&isst->camera.render, "myplugin")) {
+					      printf("Failed unloading plugin");
+					      exit(-1);
+					  }
+					  snprintf(buf, BUFSIZ, "%f", val); 
+					  render_shader_init(&isst->camera.render, render_shader_load_plugin(".libs/libmyplugin.0.dylib"), buf);
+					  break;
 			case SDLK_UP:
 			case 'e': vel[1] = 1; break;
 			case SDLK_DOWN:
@@ -243,6 +243,8 @@ do_loop(struct isst_s *isst)
 	if(vel[0] != 0) move_strafe(isst, (double)vel[0]);
 	if(vel[1] != 0) move_walk(isst, (double)vel[1]);
 	if(vel[2] != 0) move_float(isst, (double)vel[2]);
+	if(isst->ui && isst->uic < 0.99999) { isst->uic += 0.5*isst->dt; if(isst->uic > .25) isst->uic = .25; }
+	if(!isst->ui && isst->uic > 0.00001) { isst->uic -= 0.5*isst->dt; if(isst->uic < 0.0) isst->uic = 0.0; }
     }
 }
 

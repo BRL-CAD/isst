@@ -174,17 +174,22 @@ void
 paint_ogl(struct isst_s *isst)
 {
 #ifdef HAVE_OPENGL
+    int glclrbts = GL_DEPTH_BUFFER_BIT;
+
     render_camera_prep(&isst->camera);
     render_camera_render(&isst->camera, isst->tie, &isst->tile, &isst->buffer_image);
-    glClear(GL_DEPTH_BUFFER_BIT/*|GL_COLOR_BUFFER_BIT*/);
+
+    if(isst->ui)
+	glclrbts |= GL_COLOR_BUFFER_BIT;
+    glClear(glclrbts);
     glLoadIdentity();
     glColor3f(1,1,1);
     glEnable(GL_TEXTURE_2D);
     glBindTexture(GL_TEXTURE_2D, isst->texid);
     glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, isst->camera.w, isst->camera.h, GL_RGB, GL_UNSIGNED_BYTE, isst->buffer_image.data + sizeof(camera_tile_t));
     glBegin(GL_TRIANGLE_STRIP);
-    glTexCoord2d(0,0); glVertex3f(0,0,0);
-    glTexCoord2d(0,1); glVertex3f(0,isst->r.h,0);
+    glTexCoord2d(0,0); glVertex3f(isst->r.w*isst->uic,isst->r.h*isst->uic,0);
+    glTexCoord2d(0,1); glVertex3f(isst->r.w*isst->uic,isst->r.h*(1-isst->uic),0);
     glTexCoord2d(1,0); glVertex3f(isst->r.w,0,0);
     glTexCoord2d(1,1); glVertex3f(isst->r.w,isst->r.h,0);
     glEnd();

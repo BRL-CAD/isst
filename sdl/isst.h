@@ -31,8 +31,8 @@ struct isst_s {
     tienet_buffer_t buffer_image;
     struct SDL_Rect r;
     struct SDL_Surface *screen;
-    int ogl, sflags, w, h, gs;
-    double dt, fps;
+    int ogl, sflags, w, h, gs, ui;
+    double dt, fps, uic;
 #ifdef HAVE_OPENGL
     int texid;
     void *texdata;
