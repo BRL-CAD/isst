@@ -93,7 +93,7 @@ resize_isst(struct isst_s *isst)
 	glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexEnvf (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-	isst->texdata = malloc(isst->camera.w * isst->camera.h * 3);
+	isst->texdata = realloc(isst->texdata, isst->camera.w * isst->camera.h * 3);
 	glTexImage2D (GL_TEXTURE_2D, 0, GL_RGB, isst->camera.w, isst->camera.h, 0, GL_RGB, GL_UNSIGNED_BYTE, isst->texdata);
 	glDisable(GL_LIGHTING);
 	glViewport(0,0,isst->r.w, isst->r.h);
@@ -145,7 +145,7 @@ struct isst_s *
 prep_isst(int argc, const char **argv)
 {
     
-    isst = (struct isst_s *)malloc(sizeof(struct isst_s));
+    isst = (struct isst_s *)bu_calloc(1,sizeof(struct isst_s), "isst");
     isst->tie = (struct tie_s *)bu_calloc(1,sizeof(struct tie_s), "tie");
     if (argc < 2) {
 #ifdef HAVE_AGAR
