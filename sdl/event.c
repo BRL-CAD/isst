@@ -168,7 +168,7 @@ do_loop(struct isst_s *isst)
 		    case SDL_KEYDOWN:
 			switch (tolower (e.key.keysym.sym))
 			{
-			    case 'f':
+			    case SDLK_F11:
 				if(isst->sflags&SDL_FULLSCREEN)
 				    isst->sflags &= ~SDL_FULLSCREEN;
 				else
@@ -184,12 +184,12 @@ do_loop(struct isst_s *isst)
 			    case '2': render_shader_init(&isst->camera.render, "normal", NULL); break;
 			    case '3': render_shader_init(&isst->camera.render, "depth", NULL); break;
 			    case '4': render_shader_init(&isst->camera.render, "component", NULL); break;
-			    case '=': snprintf(buf, BUFSIZ, "%f", val); render_shader_init(&isst->camera.render, "myplugin", buf); break;
-			    case '[': val -= 0.1; snprintf(buf, BUFSIZ, "%f", val); render_shader_init(&isst->camera.render, "myplugin", buf); break;
-			    case ']': val += 0.1; snprintf(buf, BUFSIZ, "%f", val); render_shader_init(&isst->camera.render, "myplugin", buf); break;
 			    case SDLK_ESCAPE:
 			    case SDLK_RETURN: VSETALL(vel, 0); cmd = cmdbuf; isst->ui = !isst->ui; printf("\n"); break;
 			    case SDLK_DELETE:
+			    case '=': snprintf(buf, BUFSIZ, "%f", val); render_shader_init(&isst->camera.render, "myplugin", buf); break;
+			    case '[': val -= 0.1; snprintf(buf, BUFSIZ, "%f", val); render_shader_init(&isst->camera.render, "myplugin", buf); break;
+			    case ']': val += 0.1; snprintf(buf, BUFSIZ, "%f", val); render_shader_init(&isst->camera.render, "myplugin", buf); break;
 			    case '-':
 					      /* this stuff needs a lot of fixing */
 					      printf("\nReloading plugin\n");
@@ -209,7 +209,7 @@ do_loop(struct isst_s *isst)
 			    case SDLK_LEFT:
 			    case 'w': vel[0] = -1; break;
 			    case ' ': vel[2] = 1; break;
-			    case 'v': vel[2] = -1; break;
+			    case 'f': vel[2] = -1; break;
 			    case '0': zero_view(isst); break;
 			    case 'z': isst->gs++; if(isst->gs >= 3) isst->gs = 0; resize_isst(isst); break;
 				      /* TODO: more keys for nifty things like changing mode or pulling up gui bits or something */
@@ -227,7 +227,7 @@ do_loop(struct isst_s *isst)
 			    case 'r':
 			    case 'w': vel[0] = 0; break;
 			    case ' ':
-			    case 'v': vel[2] = 0; break;
+			    case 'f': vel[2] = 0; break;
 			}
 			break;
 		    case SDL_MOUSEMOTION:
