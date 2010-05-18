@@ -99,8 +99,8 @@ look(struct isst_s * isst, double x, double y)
     /* clamp to sane values */
     while(az > 2*M_PI) az -= 2*M_PI;
     while(az < 0) az += 2*M_PI;
-    if(el>M_PI_2) el=M_PI_2;
-    if(el<-M_PI_2) el=-M_PI_2;
+    if(el>M_PI_2) el=M_PI_2 - 0.001;
+    if(el<-M_PI_2) el=-M_PI_2 + 0.001;
 
     /* generate the new lookat point */
     V3DIR_FROM_AZEL(vec, az, el);
