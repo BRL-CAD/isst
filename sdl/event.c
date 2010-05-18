@@ -122,6 +122,7 @@ do_loop(struct isst_s *isst)
 
     isst->dt = 1;
     isst->fps = 1;
+    isst->dirty = 1;
     ts[0] = SDL_GetTicks();
 
     while (1)
@@ -168,6 +169,7 @@ do_loop(struct isst_s *isst)
 		    case SDL_VIDEORESIZE:
 			isst->w = e.resize.w;
 			isst->h = e.resize.h;
+			isst->dirty = 1;
 			resize_isst(isst);
 			break;
 		    case SDL_KEYDOWN:
@@ -185,22 +187,23 @@ do_loop(struct isst_s *isst)
 				printf("\n");
 				return EXIT_SUCCESS;
 				break;
-			    case '1': render_shader_init(&isst->camera.render, "phong", NULL); break;
-			    case '2': render_shader_init(&isst->camera.render, "normal", NULL); break;
-			    case '3': render_shader_init(&isst->camera.render, "depth", NULL); break;
-			    case '4': render_shader_init(&isst->camera.render, "component", NULL); break;
+			    case '1': render_shader_init(&isst->camera.render, "phong", NULL); isst->dirty = 1; break;
+			    case '2': render_shader_init(&isst->camera.render, "normal", NULL); isst->dirty = 1; break;
+			    case '3': render_shader_init(&isst->camera.render, "depth", NULL); isst->dirty = 1; break;
+			    case '4': render_shader_init(&isst->camera.render, "component", NULL); isst->dirty = 1; break;
 			    case '5': 
 				      VSUB2(vec, isst->camera.focus.v, isst->camera.pos.v);
 				      snprintf(buf, BUFSIZ, "#(%f %f %f)  #(%f %f %f)", V3ARGS(isst->camera.pos.v), V3ARGS(vec));
 				      render_shader_init(&isst->camera.render, "cut", buf); 
 				      move_strafe(isst, -0.05 / isst->dt);
+				      isst->dirty = 1;
 				      break;
 			    case SDLK_ESCAPE:
 			    case SDLK_RETURN: VSETALL(vel, 0); cmd = cmdbuf; isst->ui = !isst->ui; printf("\n"); break;
 			    case SDLK_DELETE:
-			    case '=': snprintf(buf, BUFSIZ, "%f", val); render_shader_init(&isst->camera.render, "myplugin", buf); break;
-			    case '[': val -= 0.1; snprintf(buf, BUFSIZ, "%f", val); render_shader_init(&isst->camera.render, "myplugin", buf); break;
-			    case ']': val += 0.1; snprintf(buf, BUFSIZ, "%f", val); render_shader_init(&isst->camera.render, "myplugin", buf); break;
+			    case '=': snprintf(buf, BUFSIZ, "%f", val); render_shader_init(&isst->camera.render, "myplugin", buf); isst->dirty = 1; break;
+			    case '[': val -= 0.1; snprintf(buf, BUFSIZ, "%f", val); render_shader_init(&isst->camera.render, "myplugin", buf); isst->dirty = 1; break;
+			    case ']': val += 0.1; snprintf(buf, BUFSIZ, "%f", val); render_shader_init(&isst->camera.render, "myplugin", buf); isst->dirty = 1; break;
 			    case '-':
 					      /* this stuff needs a lot of fixing */
 					      printf("\nReloading plugin\n");
@@ -210,6 +213,7 @@ do_loop(struct isst_s *isst)
 					      }
 					      snprintf(buf, BUFSIZ, "%f", val); 
 					      render_shader_init(&isst->camera.render, render_shader_load_plugin(".libs/libmyplugin.0.dylib"), buf);
+					      isst->dirty = 1;
 					      break;
 			    case SDLK_UP:
 			    case 'e': vel[1] = 1; break;
@@ -247,6 +251,7 @@ do_loop(struct isst_s *isst)
 				break;
 			    case 4:
 				look(isst, mouse_sensitivity * e.motion.xrel, mouse_sensitivity * e.motion.yrel);
+				isst->dirty = 1;
 				break;
 			}
 			break;
@@ -275,9 +280,9 @@ do_loop(struct isst_s *isst)
 		}
 	    }
 	}
-	if(vel[0] != 0) move_strafe(isst, (double)vel[0]);
-	if(vel[1] != 0) move_walk(isst, (double)vel[1]);
-	if(vel[2] != 0) move_float(isst, (double)vel[2]);
+	if(vel[0] != 0) { move_strafe(isst, (double)vel[0]); isst->dirty = 1; }
+	if(vel[1] != 0) { move_walk(isst, (double)vel[1]); isst->dirty = 1; }
+	if(vel[2] != 0) { move_float(isst, (double)vel[2]); isst->dirty = 1; }
 	if(isst->ui && isst->uic < 0.99999) { isst->uic += 2*isst->dt; if(isst->uic > 1.0) isst->uic = 1; }
 	if(!isst->ui && isst->uic > 0.00001) { isst->uic -= 2*isst->dt; if(isst->uic < 0.0) isst->uic = 0; }
     }

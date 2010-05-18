@@ -180,9 +180,6 @@ paint_ogl(struct isst_s *isst)
 #ifdef HAVE_OPENGL
     int glclrbts = GL_DEPTH_BUFFER_BIT;
 
-    render_camera_prep(&isst->camera);
-    render_camera_render(&isst->camera, isst->tie, &isst->tile, &isst->buffer_image);
-
     if(isst->ui)
 	glclrbts |= GL_COLOR_BUFFER_BIT;
     glClear(glclrbts);
@@ -190,7 +187,13 @@ paint_ogl(struct isst_s *isst)
     glColor3f(1,1,1);
     glEnable(GL_TEXTURE_2D);
     glBindTexture(GL_TEXTURE_2D, isst->texid);
-    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, isst->camera.w, isst->camera.h, GL_RGB, GL_UNSIGNED_BYTE, isst->buffer_image.data + sizeof(camera_tile_t));
+
+    if(isst->ft || isst->dirty) {
+	render_camera_prep(&isst->camera);
+	render_camera_render(&isst->camera, isst->tie, &isst->tile, &isst->buffer_image);
+	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, isst->camera.w, isst->camera.h, GL_RGB, GL_UNSIGNED_BYTE, isst->buffer_image.data + sizeof(camera_tile_t));
+    }
+
     glBegin(GL_TRIANGLE_STRIP);
 #if 0
     glTexCoord2d(0, 0); glVertex3f(isst->r.w*isst->uic*0.25,	isst->r.h*isst->uic*0.25,	0);
@@ -205,6 +208,7 @@ paint_ogl(struct isst_s *isst)
 #endif
     glEnd();
     SDL_GL_SwapBuffers();
+    isst->dirty = 0;
 #endif
 }
 
@@ -287,6 +291,7 @@ main(int argc, char **argv)
     isst->ogl = ogl;
     isst->w = w;
     isst->h = h;
+    isst->ft = 0;
     if(render_shader_load_plugin(".libs/libmyplugin.0.dylib")) {
 	    printf("Failed loading plugin");
     }
