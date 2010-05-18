@@ -12,7 +12,7 @@ AC_PROG_LIBTOOL
 
 AC_LONG_64_BITS
 
-AC_CHECK_FUNCS(strnstr)
+AC_CHECK_FUNCS(strnstr getopt)
 AC_CHECK_HEADERS([unistd.h sys/time.h])
 
 ##
