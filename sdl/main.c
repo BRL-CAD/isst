@@ -27,6 +27,10 @@
 # include "isst_config.h"
 #endif
 
+#ifdef WIN32
+# define OPENGL 1
+#endif
+
 #include <stdio.h>
 
 #ifdef HAVE_UNISTD_H
@@ -210,10 +214,12 @@ paint_sw(struct isst_s *isst)
     int i;
     render_camera_prep(&isst->camera);
     render_camera_render(&isst->camera, isst->tie, &isst->tile, &isst->buffer_image);
+#ifndef WIN32
     for(i=0;i<isst->h;i++)
 	memcpy(isst->screen->pixels + i * isst->screen->pitch, 
 		isst->buffer_image.data + i * isst->w * 3, 
 		isst->screen->w*3);
+#endif
     SDL_UpdateRect(isst->screen, 0, 0, 0, 0);
 }
 
@@ -223,6 +229,7 @@ main(int argc, char **argv)
     struct isst_s *isst;
     int w = 800, h = 600, c, ogl = 1, sflags = SDL_HWSURFACE|SDL_DOUBLEBUF|SDL_RESIZABLE|SDL_OPENGL;
 
+#ifdef HAVE_GETOPT
     const char opts[] = 
 	/* or would it be better to */
 #ifdef HAVE_OPENGL
@@ -254,6 +261,12 @@ main(int argc, char **argv)
     printf("optind: %d\n", optind);
     argc -= optind;
     argv += optind;
+#else
+    argc = 3;
+    argv[1] = "ktank.g";
+    argv[2] = "tank";
+    argv[3] = "g17";
+#endif
 
     if(w < 1 || h < 1) {
 	printf("Bad screen resolution specified\n");

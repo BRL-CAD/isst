@@ -27,6 +27,10 @@
 # include "isst_config.h"
 #endif
 
+#if _WIN32
+# include "config_win.h"
+#endif
+
 #include <stdio.h>
 
 #include <SDL.h>
