@@ -118,6 +118,7 @@ do_loop(struct isst_s *isst)
     double val = 1;
     int vel[3] = { 0, 0, 0 };
     char buf[BUFSIZ], cmdbuf[BUFSIZ], *cmd;
+    vect_t vec;
 
     isst->dt = 1;
     isst->fps = 1;
@@ -188,6 +189,12 @@ do_loop(struct isst_s *isst)
 			    case '2': render_shader_init(&isst->camera.render, "normal", NULL); break;
 			    case '3': render_shader_init(&isst->camera.render, "depth", NULL); break;
 			    case '4': render_shader_init(&isst->camera.render, "component", NULL); break;
+			    case '5': 
+				      VSUB2(vec, isst->camera.focus.v, isst->camera.pos.v);
+				      snprintf(buf, BUFSIZ, "#(%f %f %f)  #(%f %f %f)", V3ARGS(isst->camera.pos.v), V3ARGS(vec));
+				      render_shader_init(&isst->camera.render, "cut", buf); 
+				      move_strafe(isst, -0.05 / isst->dt);
+				      break;
 			    case SDLK_ESCAPE:
 			    case SDLK_RETURN: VSETALL(vel, 0); cmd = cmdbuf; isst->ui = !isst->ui; printf("\n"); break;
 			    case SDLK_DELETE:
