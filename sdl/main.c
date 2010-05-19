@@ -63,6 +63,7 @@ struct isst_s *isst;
 void
 resize_isst(struct isst_s *isst)
 {
+    isst->dirty = 1;
     isst->r.w = isst->w;
     isst->r.h = isst->h;
     isst->r.x = isst->r.y = isst->tile.orig_x = isst->tile.orig_y = 0;

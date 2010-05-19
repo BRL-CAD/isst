@@ -46,6 +46,8 @@ void
 move_walk(struct isst_s * isst, double dist)
 {
     vect_t vec;
+
+    isst->dirty = 1;
     VSUB2(vec, isst->camera.focus.v, isst->camera.pos.v);
     VUNITIZE(vec);
     VSCALE(vec, vec, isst->dt * dist * isst->tie->radius);
@@ -58,6 +60,8 @@ void
 move_strafe(struct isst_s * isst, double dist)
 {
     vect_t vec, dir, up;
+
+    isst->dirty = 1;
     VSET(up, 0, 0, 1);
     VSUB2(dir, isst->camera.focus.v, isst->camera.pos.v);
     VUNITIZE(dir);
@@ -70,6 +74,7 @@ move_strafe(struct isst_s * isst, double dist)
 void 
 move_float(struct isst_s * isst, double dist)
 {
+    isst->dirty = 1;
     isst->camera.pos.v[2] += 2*isst->dt*dist;
     isst->camera.focus.v[2] += 2*isst->dt*dist;
 }
@@ -78,6 +83,8 @@ void
 zero_view(struct isst_s *isst) 
 {
     vect_t vec;
+
+    isst->dirty = 1;
     VSUB2(vec, isst->tie->mid, isst->camera.pos.v);
     VUNITIZE(vec);
     VADD2(isst->camera.focus.v, isst->camera.pos.v, vec);
@@ -89,6 +96,7 @@ look(struct isst_s * isst, double x, double y)
     double az, el;
     vect_t vec;
 
+    isst->dirty = 1;
     /* generate az/el (oddly, this generates degrees instead of radians) */
     VSUB2(vec, isst->camera.pos.v, isst->camera.focus.v);
     VUNITIZE(vec);
@@ -105,6 +113,13 @@ look(struct isst_s * isst, double x, double y)
     /* generate the new lookat point */
     V3DIR_FROM_AZEL(vec, az, el);
     VADD2(isst->camera.focus.v, isst->camera.pos.v, vec);
+}
+
+void
+shader(struct isst_s *isst, char *mode, char *buf)
+{
+    isst->dirty = 1;
+    render_shader_init(&isst->camera.render, mode, buf);
 }
 
 int
@@ -169,7 +184,6 @@ do_loop(struct isst_s *isst)
 		    case SDL_VIDEORESIZE:
 			isst->w = e.resize.w;
 			isst->h = e.resize.h;
-			isst->dirty = 1;
 			resize_isst(isst);
 			break;
 		    case SDL_KEYDOWN:
@@ -187,23 +201,22 @@ do_loop(struct isst_s *isst)
 				printf("\n");
 				return EXIT_SUCCESS;
 				break;
-			    case '1': render_shader_init(&isst->camera.render, "phong", NULL); isst->dirty = 1; break;
-			    case '2': render_shader_init(&isst->camera.render, "normal", NULL); isst->dirty = 1; break;
-			    case '3': render_shader_init(&isst->camera.render, "depth", NULL); isst->dirty = 1; break;
-			    case '4': render_shader_init(&isst->camera.render, "component", NULL); isst->dirty = 1; break;
+			    case '1': shader(isst, "phong", NULL); break;
+			    case '2': shader(isst, "normal", NULL); break;
+			    case '3': shader(isst, "depth", NULL); break;
+			    case '4': shader(isst, "component", NULL); break;
 			    case '5': 
 				      VSUB2(vec, isst->camera.focus.v, isst->camera.pos.v);
 				      snprintf(buf, BUFSIZ, "#(%f %f %f)  #(%f %f %f)", V3ARGS(isst->camera.pos.v), V3ARGS(vec));
-				      render_shader_init(&isst->camera.render, "cut", buf); 
+				      shader(isst, "cut", buf); 
 				      move_strafe(isst, -0.05 / isst->dt);
-				      isst->dirty = 1;
 				      break;
 			    case SDLK_ESCAPE:
 			    case SDLK_RETURN: VSETALL(vel, 0); cmd = cmdbuf; isst->ui = !isst->ui; printf("\n"); break;
 			    case SDLK_DELETE:
-			    case '=': snprintf(buf, BUFSIZ, "%f", val); render_shader_init(&isst->camera.render, "myplugin", buf); isst->dirty = 1; break;
-			    case '[': val -= 0.1; snprintf(buf, BUFSIZ, "%f", val); render_shader_init(&isst->camera.render, "myplugin", buf); isst->dirty = 1; break;
-			    case ']': val += 0.1; snprintf(buf, BUFSIZ, "%f", val); render_shader_init(&isst->camera.render, "myplugin", buf); isst->dirty = 1; break;
+			    case '=': snprintf(buf, BUFSIZ, "%f", val); shader(isst, "myplugin", buf); break;
+			    case '[': val -= 0.1; snprintf(buf, BUFSIZ, "%f", val); shader(isst, "myplugin", buf); break;
+			    case ']': val += 0.1; snprintf(buf, BUFSIZ, "%f", val); shader(isst, "myplugin", buf); break;
 			    case '-':
 					      /* this stuff needs a lot of fixing */
 					      printf("\nReloading plugin\n");
@@ -212,8 +225,7 @@ do_loop(struct isst_s *isst)
 						  exit(-1);
 					      }
 					      snprintf(buf, BUFSIZ, "%f", val); 
-					      render_shader_init(&isst->camera.render, render_shader_load_plugin(".libs/libmyplugin.0.dylib"), buf);
-					      isst->dirty = 1;
+					      shader(isst, render_shader_load_plugin(".libs/libmyplugin.0.dylib"), buf);
 					      break;
 			    case SDLK_UP:
 			    case 'e': vel[1] = 1; break;
@@ -280,9 +292,9 @@ do_loop(struct isst_s *isst)
 		}
 	    }
 	}
-	if(vel[0] != 0) { move_strafe(isst, (double)vel[0]); isst->dirty = 1; }
-	if(vel[1] != 0) { move_walk(isst, (double)vel[1]); isst->dirty = 1; }
-	if(vel[2] != 0) { move_float(isst, (double)vel[2]); isst->dirty = 1; }
+	if(vel[0] != 0) move_strafe(isst, (double)vel[0]);
+	if(vel[1] != 0) move_walk(isst, (double)vel[1]);
+	if(vel[2] != 0) move_float(isst, (double)vel[2]);
 	if(isst->ui && isst->uic < 0.99999) { isst->uic += 2*isst->dt; if(isst->uic > 1.0) isst->uic = 1; }
 	if(!isst->ui && isst->uic > 0.00001) { isst->uic -= 2*isst->dt; if(isst->uic < 0.0) isst->uic = 0; }
     }
