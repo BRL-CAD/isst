@@ -131,7 +131,7 @@ do_loop(struct isst_s *isst)
     double dt2 = 0.0;
     double mouse_sensitivity = 0.002;
     double val = 1;
-    int vel[3] = { 0, 0, 0 };
+    int vel[3] = { 0, 0, 0 }, sc=0;
     char buf[BUFSIZ], cmdbuf[BUFSIZ], *cmd;
     vect_t vec;
 
@@ -215,8 +215,8 @@ do_loop(struct isst_s *isst)
 			    case SDLK_RETURN: VSETALL(vel, 0); cmd = cmdbuf; isst->ui = !isst->ui; printf("\n"); break;
 			    case SDLK_DELETE:
 			    case '=': snprintf(buf, BUFSIZ, "%f", val); shader(isst, "myplugin", buf); break;
-			    case '[': val -= 0.1; snprintf(buf, BUFSIZ, "%f", val); shader(isst, "myplugin", buf); break;
-			    case ']': val += 0.1; snprintf(buf, BUFSIZ, "%f", val); shader(isst, "myplugin", buf); break;
+			    case '[': sc = -1; break;
+			    case ']': sc = 1; break;
 			    case '-':
 					      /* this stuff needs a lot of fixing */
 					      printf("\nReloading plugin\n");
@@ -225,7 +225,7 @@ do_loop(struct isst_s *isst)
 						  exit(-1);
 					      }
 					      snprintf(buf, BUFSIZ, "%f", val); 
-					      shader(isst, render_shader_load_plugin(".libs/libmyplugin.0.dylib"), buf);
+					      shader(isst, (const char *)render_shader_load_plugin(".libs/libmyplugin.0.dylib"), buf);
 					      break;
 			    case SDLK_UP:
 			    case 'e': vel[1] = 1; break;
@@ -255,6 +255,8 @@ do_loop(struct isst_s *isst)
 			    case 'w': vel[0] = 0; break;
 			    case ' ':
 			    case 'f': vel[2] = 0; break;
+			    case '[':
+			    case ']': sc = 0; break;
 			}
 			break;
 		    case SDL_MOUSEMOTION:
@@ -295,6 +297,7 @@ do_loop(struct isst_s *isst)
 	if(vel[0] != 0) move_strafe(isst, (double)vel[0]);
 	if(vel[1] != 0) move_walk(isst, (double)vel[1]);
 	if(vel[2] != 0) move_float(isst, (double)vel[2]);
+	if(sc != 0) { val += isst->dt * sc; snprintf(buf, BUFSIZ, "%f", val); shader(isst, "myplugin", buf); }
 	if(isst->ui && isst->uic < 0.99999) { isst->uic += 2*isst->dt; if(isst->uic > 1.0) isst->uic = 1; }
 	if(!isst->ui && isst->uic > 0.00001) { isst->uic -= 2*isst->dt; if(isst->uic < 0.0) isst->uic = 0; }
     }
