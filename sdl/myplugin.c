@@ -54,7 +54,7 @@ adrt_plugin_work(render_t *r, tie_t *t, tie_ray_t *ray, TIE_3 *pixel)
     if(hitdata.in) {
 	VSET(pixel->v, 1, 0, 0);
     } else
-	VSET(pixel->v, hitdata.color, hitdata.color, hitdata.color);
+	VSETALL(pixel->v, hitdata.color);
 }
 
 void

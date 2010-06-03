@@ -64,8 +64,8 @@ move_strafe(struct isst_s * isst, double dist)
     isst->dirty = 1;
     VSET(up, 0, 0, 1);
     VSUB2(dir, isst->camera.focus.v, isst->camera.pos.v);
-    VUNITIZE(dir);
     VCROSS(vec, dir, up);
+    VUNITIZE(vec);
     VSCALE(vec, vec, isst->dt * dist * isst->tie->radius);
     VADD2(isst->camera.pos.v, isst->camera.pos.v, vec);
     VADD2(isst->camera.focus.v, isst->camera.pos.v, dir);
@@ -134,6 +134,7 @@ do_loop(struct isst_s *isst)
     int vel[3] = { 0, 0, 0 }, sc=0;
     char buf[BUFSIZ], cmdbuf[BUFSIZ], *cmd;
     vect_t vec;
+    struct adrt_mesh_s *mesh;
 
     isst->dt = 1;
     isst->fps = 1;
@@ -190,10 +191,13 @@ do_loop(struct isst_s *isst)
 			switch (tolower (e.key.keysym.sym))
 			{
 			    case SDLK_F11:
-				if(isst->sflags&SDL_FULLSCREEN)
+				if(isst->sflags&SDL_FULLSCREEN) {
 				    isst->sflags &= ~SDL_FULLSCREEN;
-				else
+				    SDL_WM_GrabInput(SDL_GRAB_OFF);
+				} else {
 				    isst->sflags |= SDL_FULLSCREEN;
+				    SDL_WM_GrabInput(SDL_GRAB_ON);
+				}
 				resize_isst(isst);
 				break;
 			    case SDLK_F12:
@@ -206,6 +210,9 @@ do_loop(struct isst_s *isst)
 			    case '3': shader(isst, "depth", NULL); break;
 			    case '4': shader(isst, "component", NULL); break;
 			    case '5': 
+				      /* clear all the hit list */
+				      for(BU_LIST_FOR(mesh, adrt_mesh_s, &isst->meshes->l))
+					  mesh->flags &= ~ADRT_MESH_HIT;
 				      VSUB2(vec, isst->camera.focus.v, isst->camera.pos.v);
 				      snprintf(buf, BUFSIZ, "#(%f %f %f)  #(%f %f %f)", V3ARGS(isst->camera.pos.v), V3ARGS(vec));
 				      shader(isst, "cut", buf); 
@@ -218,15 +225,15 @@ do_loop(struct isst_s *isst)
 			    case '[': sc = -1; break;
 			    case ']': sc = 1; break;
 			    case '-':
-					      /* this stuff needs a lot of fixing */
-					      printf("\nReloading plugin\n");
-					      if(render_shader_unload_plugin(&isst->camera.render, "myplugin")) {
-						  printf("Failed unloading plugin");
-						  exit(-1);
-					      }
-					      snprintf(buf, BUFSIZ, "%f", val); 
-					      shader(isst, (const char *)render_shader_load_plugin(".libs/libmyplugin.0.dylib"), buf);
-					      break;
+				      /* this stuff needs a lot of fixing */
+				      printf("\nReloading plugin\n");
+				      if(render_shader_unload_plugin(&isst->camera.render, "myplugin")) {
+					  printf("Failed unloading plugin");
+					  exit(-1);
+				      }
+				      snprintf(buf, BUFSIZ, "%f", val); 
+				      shader(isst, (const char *)render_shader_load_plugin(".libs/libmyplugin.0.dylib"), buf);
+				      break;
 			    case SDLK_UP:
 			    case 'e': vel[1] = 1; break;
 			    case SDLK_DOWN:
