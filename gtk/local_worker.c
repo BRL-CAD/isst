@@ -114,6 +114,7 @@ isst_local_worker (gpointer moocow) {
 	camera.fov  = isst.camera_fov;
 	camera.pos  = isst.camera_pos;
 	camera.focus= isst.camera_foc;
+	camera.gridsize = isst.camera_grid;
 
 	isst.buffer_image.ind = 0;
 

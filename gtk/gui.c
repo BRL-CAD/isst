@@ -621,11 +621,12 @@ load_g_project_callback (const char *file, const char **region)
 	    isst.update_avail = 1;
 	    isst.pid = 0;	/* no project id's here, but not -1 */
 
+	    sleep(0);	/* O.o get nan's without this. */
 	    VMOVE(isst.geom_min.v, tie->min.v);
 	    VMOVE(isst.geom_max.v, tie->max.v);
 	    VMOVE(isst.geom_center.v, tie->mid);
 	    VMOVE(isst.camera_foc.v,  isst.geom_center.v);
-	    sleep(0);	/* O.o get nan's without this. */
+	    isst.camera_grid = tie->radius*2;
 
 	    VSUB2SCALE(mid, isst.geom_max.v, isst.geom_min.v, 0.5);
 
@@ -1026,7 +1027,7 @@ fire_shotline_callback (GtkWidget *widget, gpointer ptr)
     camera.type = RENDER_CAMERA_ORTHOGRAPHIC;
     camera.pos = isst.camera_pos;
     camera.focus = isst.camera_foc;
-    camera.fov = isst.camera_grid;
+    camera.gridsize = isst.camera_grid;
     render_camera_prep (&camera);
 
     ray.pos = camera.view_list[0].pos;
