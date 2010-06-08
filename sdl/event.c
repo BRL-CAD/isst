@@ -246,6 +246,10 @@ do_loop(struct isst_s *isst)
 			    case 'f': vel[2] = -1; break;
 			    case '0': zero_view(isst); break;
 			    case 'z': isst->gs++; if(isst->gs >= 3) isst->gs = 0; resize_isst(isst); break;
+			    case 'o':
+				      isst->camera.type = isst->camera.type == RENDER_CAMERA_ORTHOGRAPHIC ? RENDER_CAMERA_PERSPECTIVE : RENDER_CAMERA_ORTHOGRAPHIC;
+				      isst->dirty = 1;
+				      break;
 				      /* TODO: more keys for nifty things like changing mode or pulling up gui bits or something */
 			}
 			break;

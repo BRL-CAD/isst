@@ -292,6 +292,7 @@ main(int argc, char **argv)
     isst->ogl = ogl;
     isst->w = w;
     isst->h = h;
+    isst->camera.gridsize = isst->tie->radius * 2;
     isst->ft = 0;
     if(render_shader_load_plugin(".libs/libmyplugin.0.dylib")) {
 	    printf("Failed loading plugin");
