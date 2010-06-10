@@ -68,13 +68,13 @@ AC_ARG_ENABLE(debug,
 )
 
 # Compile in BRLCAD support if specified by user
-BRLCAD_CFLAGS="-I/usr/brlcad/include -I/usr/brlcad/include/brlcad -I/usr/brlcad/include/tie"
-BRLCAD_LIBS="-L/usr/brlcad/lib"
+BRLCAD_CFLAGS="`brlcad-config --cflags`"
+BRLCAD_LIBS="`brlcad-config --libs`"
 AC_ARG_WITH(brlcad, AC_HELP_STRING(--with-brlcad=path,
                 [Specify location of BRLCAD Installation]),
         [
-                BRLCAD_CFLAGS="-I$withval/include -I$withval/include/brlcad -I$withval/include/tie"
-                BRLCAD_LIBS="-L$withval/lib"
+                BRLCAD_CFLAGS="`$withval/bin/brlcad-config --cflags` -I$withval/include/tie"
+                BRLCAD_LIBS="`$withval/bin/brlcad-config --libs gcv`"
                 AC_DEFINE(HAVE_BRLCAD,1,Checking for BRLCAD Installation)
         ]
 )
