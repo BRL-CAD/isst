@@ -275,7 +275,7 @@ do_loop(struct isst_s *isst)
 			switch(e.motion.state) {
 			    case 1:
 				break;
-			    case 4:
+			    case SDL_BUTTON(SDL_BUTTON_RIGHT):
 				look(isst, mouse_sensitivity * e.motion.xrel, mouse_sensitivity * e.motion.yrel);
 				isst->dirty = 1;
 				break;
