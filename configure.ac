@@ -34,7 +34,7 @@ AC_PATH_XTRA
 HAVE_SDL=no
 AM_PATH_SDL(1.2.0,HAVE_SDL=yes,)
 
-if test "x$HAVE_GTK2" = xno && "xHAVE_SDL" = xno
+if test "x$HAVE_GTK2" = xno && test "x$HAVE_SDL" = xno
 then
 	AC_MSG_ERROR(["Requires either GTK+-2.0 or SDL 1.2+"])
 fi
