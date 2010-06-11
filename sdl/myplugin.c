@@ -3,6 +3,12 @@
 
 const char name[] = "myplugin";
 
+enum {
+    HIT_OUT,
+    HIT_IN,
+    HIT_OVERLAP
+};
+
 fastf_t aval;
 
 struct hitdata_s {
@@ -11,6 +17,7 @@ struct hitdata_s {
     fastf_t a;
     int in;
     fastf_t prevhitdist;
+    adrt_mesh_t *prevhitmesh;
 };
 
 static void *
@@ -18,12 +25,24 @@ hit(tie_ray_t *ray, tie_id_t *id, tie_tri_t *tri, void *ptr)
 {
     struct hitdata_s *hd = (struct hitdata_s *)ptr;
     fastf_t dist;
+    adrt_mesh_t *mesh = tri->ptr;
 
-    if(hd->in) {
+    if(hd->in == HIT_IN) {
+	if( mesh != hd->prevhitmesh ) {
+	    /*
+	    bu_log("Overlap issue: %x(%s) %x(%s) (%f %f : %f)\n", 
+		    hd->prevhitmesh, hd->prevhitmesh->name,
+		    mesh, mesh->name,
+		    1000*hd->prevhitdist, 1000*id->dist, 1000*(id->dist-hd->prevhitdist));
+	    */
+	    hd->in = HIT_OVERLAP;
+	    return NULL;
+	}
+
 	dist = aval * (id->dist - hd->prevhitdist);
 	hd->color += dist;
 	hd->a -= dist;
-	hd->in = 0;
+	hd->in = HIT_OUT;
 	if(hd->color > 1.0) {
 	    hd->color = 1.0;
 	    return ptr;
@@ -31,8 +50,9 @@ hit(tie_ray_t *ray, tie_id_t *id, tie_tri_t *tri, void *ptr)
 	if(hd->a < 0)
 	    return ptr;	/* end raytracing */
     } else {
-	hd->in = 1;
+	hd->in = HIT_IN;
 	hd->prevhitdist = id->dist;
+	hd->prevhitmesh = mesh;
     }
 
     /* continue firing */
@@ -44,17 +64,24 @@ adrt_plugin_work(render_t *r, tie_t *t, tie_ray_t *ray, TIE_3 *pixel)
 {
     tie_id_t id;
     struct hitdata_s hitdata;
-    adrt_mesh_t *mesh;
     hitdata.render = r;
     hitdata.a = 1.0;
     hitdata.in = 0;
     hitdata.color = 0;
 
     tie_work(t, ray, &id, hit, &hitdata);
-    if(hitdata.in) {
-	VSET(pixel->v, 1, 0, 0);
-    } else
-	VSETALL(pixel->v, hitdata.color);
+	    VSETALL(pixel->v, hitdata.color);
+    switch(hitdata.in) {
+	case HIT_IN:
+	    VSET(pixel->v, 1, 0, 0);
+	    break;
+	case HIT_OUT:
+	    VSETALL(pixel->v, hitdata.color);
+	    break;
+	case HIT_OVERLAP:
+	    VSET(pixel->v, 0, 1, 0);
+	    break;
+    }
 }
 
 void
