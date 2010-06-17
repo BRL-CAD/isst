@@ -140,6 +140,9 @@ do_loop(struct isst_s *isst)
     isst->fps = 1;
     isst->dirty = 1;
     ts[0] = SDL_GetTicks();
+    isst->cmdbuf = cmdbuf;
+    memset(cmdbuf, 0, BUFSIZ);
+    memset(buf, 0, BUFSIZ);
 
     while (1)
     {   
@@ -298,9 +301,11 @@ do_loop(struct isst_s *isst)
 				*cmd = 0;
 				printf("\nExecute command: \"%s\"\n", cmdbuf);
 				isst->ui = 0;
+				*cmdbuf = 0;
 				break;
 			    default:
 				*cmd++ = e.key.keysym.sym;
+				*cmd = 0;
 				fflush(stdout);
 			}
 		}

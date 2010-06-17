@@ -22,7 +22,6 @@
  *
  */
 
-
 struct isst_s {
     struct tie_s *tie;
     struct render_camera_s camera;
@@ -34,9 +33,10 @@ struct isst_s {
     int ogl, sflags, w, h, gs, ui, dirty, ft;
     double dt, fps, uic;
 #ifdef HAVE_OPENGL
-    int texid;
+    int texid, fonttexid;
     void *texdata;
 #endif
+    char *cmdbuf;
 };
 
 void resize_isst(struct isst_s *isst);

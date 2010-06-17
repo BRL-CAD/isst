@@ -37,6 +37,10 @@
 # include <unistd.h>
 #endif
 
+#ifdef HAVE_FCNTL_H
+# include <fcntl.h>
+#endif
+
 #ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>
 #endif
@@ -58,7 +62,10 @@
 
 #include "isst.h"
 
+#define FONT_SIZE 1024
+
 struct isst_s *isst;
+GLuint fontid;
 
 void
 resize_isst(struct isst_s *isst)
@@ -149,13 +156,12 @@ CreateLoadWindow(void)
 struct isst_s *
 prep_isst(int argc, const char **argv)
 {
-    
     isst = (struct isst_s *)bu_calloc(1,sizeof(struct isst_s), "isst");
     isst->tie = (struct tie_s *)bu_calloc(1,sizeof(struct tie_s), "tie");
     if (argc < 2) {
 #ifdef HAVE_AGAR
-    	AG_InitCore("agar-dialog",0);
-    	AG_InitGraphics(NULL);
+	AG_InitCore("agar-dialog",0);
+	AG_InitGraphics(NULL);
 	CreateLoadWindow();
 	AG_EventLoop();
 	AG_Destroy();
@@ -163,7 +169,7 @@ prep_isst(int argc, const char **argv)
 	bu_log("Something really bad happened\n");
 #endif
     } else {
-       load_g(isst->tie, argv[0], argc-1, argv+1, &(isst->meshes));
+	load_g(isst->tie, argv[0], argc-1, argv+1, &(isst->meshes));
     }
     TIENET_BUFFER_INIT(isst->buffer_image);
     render_camera_init(&isst->camera, bu_avail_cpus());
@@ -179,7 +185,7 @@ void
 paint_ogl(struct isst_s *isst)
 {
 #ifdef HAVE_OPENGL
-    int glclrbts = GL_DEPTH_BUFFER_BIT;
+    int glclrbts = GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT;
 
     if(isst->ui)
 	glclrbts |= GL_COLOR_BUFFER_BIT;
@@ -208,6 +214,27 @@ paint_ogl(struct isst_s *isst)
     glTexCoord2d(1, 1); glVertex3f(isst->r.w,			isst->r.h*(.75+.25*(1-isst->uic)),	0);
 #endif
     glEnd();
+    if(*isst->cmdbuf) {
+	char *cmd = isst->cmdbuf;
+	int i = 0;
+
+	glBindTexture(GL_TEXTURE_2D, isst->fonttexid);
+	while(*cmd) {
+	    double x, y, s = 1.0/16.0;
+	    x = (double)((*cmd)&0xf)/16.0;
+	    y = (double)((*cmd)>>4)/16.0;
+	    glBegin(GL_TRIANGLE_STRIP);
+#define FONTSIZE 32
+	    glTexCoord2d(x, y); glVertex3f(0.5*i*FONTSIZE, isst->r.h, 0);
+	    glTexCoord2d(x, y+s); glVertex3f(0.5*i*FONTSIZE, isst->r.h-FONTSIZE, 0);
+	    i++;
+	    glTexCoord2d(x+s, y); glVertex3f(0.5*i*FONTSIZE, isst->r.h, 0);
+	    glTexCoord2d(x+s, y+s); glVertex3f(0.5*i*FONTSIZE, isst->r.h-FONTSIZE, 0);
+#undef FONTSIZE
+	    glEnd();
+	    cmd++;
+	}
+    }
     SDL_GL_SwapBuffers();
     isst->dirty = 0;
 #endif
@@ -294,10 +321,44 @@ main(int argc, char **argv)
     isst->h = h;
     isst->camera.gridsize = isst->tie->radius * 2;
     isst->ft = 0;
+
     if(render_shader_load_plugin(".libs/libmyplugin.0.dylib")) {
-	    printf("Failed loading plugin");
+	    bu_log("Failed loading plugin\n");
     }
+#ifdef HAVE_OPENGL
+	bu_log("Genreating textures\n");
+	    isst->screen = SDL_SetVideoMode (isst->w, isst->h, 24, isst->sflags);
+	    glEnable(GL_TEXTURE_2D);
+	glGenTextures(1, &(isst->texid));
+	glGenTextures(1, &(isst->fonttexid));
+	bu_log("\ntexid: %d\nfontid: %d\n", isst->texid, isst->fonttexid);
+	fflush(stdout);
+#endif
     resize_isst(isst);
+
+#ifdef HAVE_OPENGL
+    if(isst->sflags & SDL_OPENGL) {
+	char buf[3*FONT_SIZE*FONT_SIZE];
+	int fd;
+	bu_log("Reading font\n");
+	fd = open("trebuchet_bold.pix", O_RDONLY);
+	if(fd == -1) {
+		perror("Font file");
+		exit(-1);
+	}
+	read(fd, buf, 3*FONT_SIZE*FONT_SIZE);
+	close(fd);
+
+	glBindTexture (GL_TEXTURE_2D, isst->fonttexid);
+	glPixelStorei (GL_UNPACK_ALIGNMENT, 1);
+	glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexEnvf (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+	glTexImage2D (GL_TEXTURE_2D, 0, GL_RGB, FONT_SIZE, FONT_SIZE, 0, GL_RGB, GL_UNSIGNED_BYTE, buf);
+	glBindTexture (GL_TEXTURE_2D, isst->texid);
+    }
+#endif
+
 
     /* main event loop */
     return do_loop(isst);
