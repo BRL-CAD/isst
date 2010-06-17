@@ -37,7 +37,6 @@
 void
 paint(char *buf, char *glyph, int rows, int width, int stride)
 {
-    glyph += (rows-1)*width;
     while(rows--) {
 	int i;
 	for(i=0;i<width;i++) {
@@ -69,6 +68,12 @@ writec(int fd, unsigned char *buf, size_t len)
     } while(len > 0);
     fprintf(f, "0x%02x\n};\n", *buf);
     return;
+}
+
+void
+pixflip(char *buf, int width, int height)
+{
+    
 }
 
 int
@@ -132,7 +137,7 @@ main(int argc, char **argv)
 
     printf("%d glyphs %dx%d (%dx%d) from %s, heading to %s\n", f->num_glyphs, s, s, (s>>4), (s>>4), *argv, argv[1]);
 
-    i = FT_Set_Pixel_Sizes(f, 0, s>>4);
+    i = FT_Set_Pixel_Sizes(f, s>>4, s>>4);
     if(i) {
 	printf("Error setting pixel size: %d\n", i);
 	return -1;
@@ -141,14 +146,19 @@ main(int argc, char **argv)
     for(i=0;i<=0xff;i++) 
     {
 	if(isprint(i)) {
+	    int x, y, ss;
+	    ss = s>>4;
 	    if(FT_Load_Glyph(f,FT_Get_Char_Index(f, i),FT_LOAD_DEFAULT)) {
 		printf("Error loading glyph for %c(%d)\n", i, i);
 		return -1;
 	    }
 	    FT_Render_Glyph(f->glyph, FT_RENDER_MODE_NORMAL);
-	    paint( buf + 
-		    (((i>>4)*s + (i&0xf))
-		     * (s>>4) - s * f->glyph->bitmap_top) * 3, f->glyph->bitmap.buffer ,f->glyph->bitmap.rows, f->glyph->bitmap.width, s);
+	    x = ((i&0xf)*s>>4) + f->glyph->bitmap_left;
+	    y = ((i>>4)) * s>>4;
+	    printf("%d: %d/%d %d\n", i, i&0xf, x, y);
+	    paint( buf + ( y * s + x) * 3,
+		    f->glyph->bitmap.buffer  + (f->glyph->bitmap.rows-1) * f->glyph->bitmap.width
+		    ,f->glyph->bitmap.rows, f->glyph->bitmap.width, s);
 	}
     }
 

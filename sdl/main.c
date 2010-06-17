@@ -229,6 +229,9 @@ paint_ogl(struct isst_s *isst)
     if(*isst->cmdbuf) {
 	char *cmd = isst->cmdbuf;
 	int i = 0;
+        double FONTSIZE;
+
+	FONTSIZE = isst->r.h / 12.0;
 
         glColor3f(0,1,0.5);
 	glBindTexture(GL_TEXTURE_2D, isst->fonttexid);
@@ -238,13 +241,12 @@ paint_ogl(struct isst_s *isst)
 	    y = (double)((*cmd)>>4)/16.0;
 
 	    glBegin(GL_TRIANGLE_STRIP);
-#define FONTSIZE 32
 	    glTexCoord2d(x, y); glVertex3f(0.5*i*FONTSIZE, isst->r.h, 0);
 	    glTexCoord2d(x, y+s); glVertex3f(0.5*i*FONTSIZE, isst->r.h-FONTSIZE, 0);
 	    i++;
 	    glTexCoord2d(x+s, y); glVertex3f(0.5*i*FONTSIZE, isst->r.h, 0);
 	    glTexCoord2d(x+s, y+s); glVertex3f(0.5*i*FONTSIZE, isst->r.h-FONTSIZE, 0);
-#undef FONTSIZE
+
 	    glEnd();
 	    cmd++;
 	}
