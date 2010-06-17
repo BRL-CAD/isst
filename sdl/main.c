@@ -100,6 +100,9 @@ resize_isst(struct isst_s *isst)
 #ifdef HAVE_OPENGL
     if(isst->sflags & SDL_OPENGL) {
 	glClearColor (0.0, 0, 0.0, 1);
+	glEnable(GL_TEXTURE_2D);
+
+	glGenTextures(1, &(isst->texid));
 	glBindTexture (GL_TEXTURE_2D, isst->texid);
 	glPixelStorei (GL_UNPACK_ALIGNMENT, 1);
 	glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -107,6 +110,15 @@ resize_isst(struct isst_s *isst)
 	glTexEnvf (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 	isst->texdata = realloc(isst->texdata, isst->camera.w * isst->camera.h * 3);
 	glTexImage2D (GL_TEXTURE_2D, 0, GL_RGB, isst->camera.w, isst->camera.h, 0, GL_RGB, GL_UNSIGNED_BYTE, isst->texdata);
+
+	glGenTextures(1, &(isst->fonttexid));
+	glBindTexture (GL_TEXTURE_2D, isst->fonttexid);
+	glPixelStorei (GL_UNPACK_ALIGNMENT, 1);
+	glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexEnvf (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+	glTexImage2D (GL_TEXTURE_2D, 0, GL_RGB, FONT_SIZE, FONT_SIZE, 0, GL_RGB, GL_UNSIGNED_BYTE, isst->fonttextbuf);
+
 	glDisable(GL_LIGHTING);
 	glViewport(0,0,isst->r.w, isst->r.h);
 	glMatrixMode (GL_PROJECTION);
@@ -218,11 +230,13 @@ paint_ogl(struct isst_s *isst)
 	char *cmd = isst->cmdbuf;
 	int i = 0;
 
+        glColor3f(0,1,0.5);
 	glBindTexture(GL_TEXTURE_2D, isst->fonttexid);
 	while(*cmd) {
 	    double x, y, s = 1.0/16.0;
 	    x = (double)((*cmd)&0xf)/16.0;
 	    y = (double)((*cmd)>>4)/16.0;
+
 	    glBegin(GL_TRIANGLE_STRIP);
 #define FONTSIZE 32
 	    glTexCoord2d(x, y); glVertex3f(0.5*i*FONTSIZE, isst->r.h, 0);
@@ -267,7 +281,7 @@ main(int argc, char **argv)
 #ifdef HAVE_OPENGL
 	"fw:h:s";
 #else
-	"fw:h:";
+    "fw:h:";
 #endif
 
     while((c=getopt(argc, argv, opts)) != -1)
@@ -289,7 +303,7 @@ main(int argc, char **argv)
 	    case '?':
 		printf("Whu?\n");
 		return EXIT_FAILURE;
-    }
+	}
     printf("optind: %d\n", optind);
     argc -= optind;
     argv += optind;
@@ -322,42 +336,25 @@ main(int argc, char **argv)
     isst->camera.gridsize = isst->tie->radius * 2;
     isst->ft = 0;
 
-    if(render_shader_load_plugin(".libs/libmyplugin.0.dylib")) {
-	    bu_log("Failed loading plugin\n");
-    }
 #ifdef HAVE_OPENGL
-	bu_log("Genreating textures\n");
-	    isst->screen = SDL_SetVideoMode (isst->w, isst->h, 24, isst->sflags);
-	    glEnable(GL_TEXTURE_2D);
-	glGenTextures(1, &(isst->texid));
-	glGenTextures(1, &(isst->fonttexid));
-	bu_log("\ntexid: %d\nfontid: %d\n", isst->texid, isst->fonttexid);
-	fflush(stdout);
-#endif
-    resize_isst(isst);
-
-#ifdef HAVE_OPENGL
-    if(isst->sflags & SDL_OPENGL) {
-	char buf[3*FONT_SIZE*FONT_SIZE];
+    {
 	int fd;
-	bu_log("Reading font\n");
+
+	isst->fonttextbuf = malloc(1024*1024*3);
 	fd = open("trebuchet_bold.pix", O_RDONLY);
 	if(fd == -1) {
-		perror("Font file");
-		exit(-1);
+	    perror("Font file");
+	    exit(-1);
 	}
-	read(fd, buf, 3*FONT_SIZE*FONT_SIZE);
+	read(fd, isst->fonttextbuf, 3*FONT_SIZE*FONT_SIZE);
 	close(fd);
-
-	glBindTexture (GL_TEXTURE_2D, isst->fonttexid);
-	glPixelStorei (GL_UNPACK_ALIGNMENT, 1);
-	glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexEnvf (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-	glTexImage2D (GL_TEXTURE_2D, 0, GL_RGB, FONT_SIZE, FONT_SIZE, 0, GL_RGB, GL_UNSIGNED_BYTE, buf);
-	glBindTexture (GL_TEXTURE_2D, isst->texid);
     }
 #endif
+
+    if(render_shader_load_plugin(".libs/libmyplugin.0.dylib")) {
+	bu_log("Failed loading plugin\n");
+    }
+    resize_isst(isst);
 
 
     /* main event loop */

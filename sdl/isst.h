@@ -35,6 +35,7 @@ struct isst_s {
 #ifdef HAVE_OPENGL
     int texid, fonttexid;
     void *texdata;
+    void *fonttextbuf;
 #endif
     char *cmdbuf;
 };
