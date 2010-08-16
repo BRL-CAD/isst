@@ -75,8 +75,8 @@ void
 move_float(struct isst_s * isst, double dist)
 {
     isst->dirty = 1;
-    isst->camera.pos.v[2] += 2*isst->dt*dist;
-    isst->camera.focus.v[2] += 2*isst->dt*dist;
+    isst->camera.pos.v[2] += isst->tie->radius*isst->dt*dist;
+    isst->camera.focus.v[2] += isst->tie->radius*isst->dt*dist;
 }
 
 void
