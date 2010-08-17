@@ -46,7 +46,7 @@ IF(BRLCAD_BASE_DIR)
     MESSAGE(STATUS "\t\t Using BRLCAD_BASE_DIR...")
     #if BRLCAD_BASE_DIR is set, then this makes it easy!
     SET(BRLCAD_BIN_DIR "${BRLCAD_BASE_DIR}/bin")
-    SET(BRLCAD_INC_DIRS "${BRLCAD_BASE_DIR}/include" "${BRLCAD_BASE_DIR}/include/brlcad" "${BRLCAD_BASE_DIR}/include/openNURBS")
+    SET(BRLCAD_INC_DIRS "${BRLCAD_BASE_DIR}/include" "${BRLCAD_BASE_DIR}/include/brlcad" "${BRLCAD_BASE_DIR}/include/openNURBS" "${BRLCAD_BASE_DIR}/include/tie")
     SET(BRLCAD_LIB_DIR "${BRLCAD_BASE_DIR}/lib")
 ELSE(BRLCAD_BASE_DIR)
     MESSAGE(STATUS "\t\t Searching for BRLCAD components...")
