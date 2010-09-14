@@ -24,7 +24,9 @@
  *
  */
 
-#include "isst_config.h"
+#ifdef HAVE_CONFIG_H
+# include "isst_config.h"
+#endif
 
 #include <stdio.h>
 #include <stdlib.h>
