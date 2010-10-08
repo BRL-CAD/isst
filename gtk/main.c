@@ -52,9 +52,10 @@ static struct option longopts[] =
 {
     { "help",	no_argument,		NULL, 'h' },
     { "build",	no_argument,		NULL, 'b' },
+    { "pluh",	required_argument,	NULL, 'p' },
 };
 #endif
-static char shortopts[] = "hb";
+static char shortopts[] = "hbp:";
 
 
 static void finish(int sig) {
@@ -92,6 +93,8 @@ int main(int argc, char **argv) {
 	    case 'b':
 		printf("DIVA %s \n", __DATE__);
 		return EXIT_SUCCESS;
+	    case 'p':	/* ignored, passed in on mac from launchd/open */
+		break;
 	    default:
 		help();
 		return EXIT_FAILURE;

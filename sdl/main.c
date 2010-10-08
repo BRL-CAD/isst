@@ -281,9 +281,9 @@ main(int argc, char **argv)
     const char opts[] = 
 	/* or would it be better to */
 #ifdef HAVE_OPENGL
-	"fw:h:s";
+	"fw:h:sp:";
 #else
-    "fw:h:";
+    "fw:h:p:";
 #endif
 
     while((c=getopt(argc, argv, opts)) != -1)
@@ -300,6 +300,8 @@ main(int argc, char **argv)
 	    case 's':
 		sflags &= ~SDL_OPENGL;
 		ogl = 0;
+		break;
+	    case 'p':
 		break;
 	    case ':':
 	    case '?':
