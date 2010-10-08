@@ -170,6 +170,8 @@ function(_GTK2_FIND_INCLUDE_DIR _var _hdr)
             /opt/gnome/lib
             /opt/openwin/include
             /usr/openwin/lib
+            /opt/local/include
+            /opt/local/lib
             /sw/include
             /sw/lib
             $ENV{GTKMM_BASEPATH}/include
@@ -282,6 +284,7 @@ function(_GTK2_FIND_LIBRARY _var _lib _expand_vc _append_version)
             /opt/gnome/lib64
             /usr/openwin/lib
             /usr/openwin/lib64
+            /opt/local/lib
             /sw/lib
             $ENV{GTKMM_BASEPATH}/lib
             [HKEY_CURRENT_USER\\SOFTWARE\\gtkmm\\2.4;Path]/lib
