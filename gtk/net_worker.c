@@ -30,9 +30,11 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdint.h>
 #include <string.h>
-#include <pthread.h>
+
+#if HAVE_PTHREAD_H
+# include <pthread.h>
+#endif
 
 #include <netdb.h>
 #include <netinet/in.h>

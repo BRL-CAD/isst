@@ -28,14 +28,14 @@
 # include "isst_config.h"
 #endif
 
-#include <pthread.h>
+#if HAVE_PTHREAD_H
+# include <pthread.h>
+#endif
 
-#include <stdint.h>
-
-#include "tie/tie.h"
-#include "tie/adrt.h"
-#include "tie/adrt_struct.h"
-#include "tie/camera.h"
+#include "tie.h"
+#include "adrt.h"
+#include "adrt_struct.h"
+#include "camera.h"
 
 #include "isst.h"
 

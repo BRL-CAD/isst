@@ -30,10 +30,13 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdint.h>
 #include <string.h>
 #include <signal.h>
-#include <unistd.h>
+
+#if HAVE_UNISTD_H
+# include <unistd.h>
+#endif
+
 #include <pthread.h>
 
 #include "tie/tie.h"
