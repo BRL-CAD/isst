@@ -402,6 +402,9 @@ foreach(_GTK2_component ${GTK2_FIND_COMPONENTS})
         _GTK2_FIND_INCLUDE_DIR(GTK2_GOBJECT_INCLUDE_DIR gobject/gobject.h)
         _GTK2_FIND_LIBRARY    (GTK2_GOBJECT_LIBRARY gobject false true)
 
+        _GTK2_FIND_INCLUDE_DIR(GTK2_GTHREAD_INCLUDE_DIR gthread.h)
+        _GTK2_FIND_LIBRARY    (GTK2_GTHREAD_LIBRARY gthread false true)
+
         _GTK2_FIND_INCLUDE_DIR(GTK2_GDK_INCLUDE_DIR gdk/gdk.h)
         _GTK2_FIND_INCLUDE_DIR(GTK2_GDKCONFIG_INCLUDE_DIR gdkconfig.h)
         _GTK2_FIND_LIBRARY    (GTK2_GDK_LIBRARY gdk-x11 false true)
