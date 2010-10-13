@@ -217,14 +217,24 @@ do_loop(struct isst_s *isst)
 				      for(BU_LIST_FOR(mesh, adrt_mesh_s, &isst->meshes->l))
 					  mesh->flags &= ~ADRT_MESH_HIT;
 				      VSUB2(vec, isst->camera.focus.v, isst->camera.pos.v);
+#if _WIN32
+				      sprintf(buf, "#(%f %f %f)  #(%f %f %f)", V3ARGS(isst->camera.pos.v), V3ARGS(vec));
+#else
 				      snprintf(buf, BUFSIZ, "#(%f %f %f)  #(%f %f %f)", V3ARGS(isst->camera.pos.v), V3ARGS(vec));
+#endif
 				      shader(isst, "cut", buf); 
 				      move_strafe(isst, -0.05 / isst->dt);
 				      break;
 			    case SDLK_ESCAPE:
 			    case SDLK_RETURN: VSETALL(vel, 0); cmd = cmdbuf; isst->ui = !isst->ui; printf("\n"); break;
 			    case SDLK_DELETE:
-			    case '=': snprintf(buf, BUFSIZ, "%f", val); shader(isst, "myplugin", buf); break;
+			    case '=': 
+#if _WIN32
+					      sprintf(buf, "%f", val); 
+#else
+					      snprintf(buf, BUFSIZ, "%f", val);
+#endif
+					      shader(isst, "myplugin", buf); break;
 			    case '[': sc = -1; break;
 			    case ']': sc = 1; break;
 			    case '-':
@@ -234,7 +244,11 @@ do_loop(struct isst_s *isst)
 					  printf("Failed unloading plugin");
 					  exit(-1);
 				      }
+#if _WIN32
+				      sprintf(buf, "%f", val); 
+#else
 				      snprintf(buf, BUFSIZ, "%f", val); 
+#endif
 				      shader(isst, (const char *)render_shader_load_plugin(".libs/libmyplugin.0.dylib"), buf);
 				      break;
 			    case SDLK_UP:
@@ -314,7 +328,13 @@ do_loop(struct isst_s *isst)
 	if(vel[0] != 0) move_strafe(isst, (double)vel[0]);
 	if(vel[1] != 0) move_walk(isst, (double)vel[1]);
 	if(vel[2] != 0) move_float(isst, (double)vel[2]);
-	if(sc != 0) { val += isst->dt * sc; snprintf(buf, BUFSIZ, "%f", val); shader(isst, "myplugin", buf); }
+	if(sc != 0) { val += isst->dt * sc; 
+#ifdef _WIN32
+		sprintf(buf, "%f", val); 
+#else
+		snprintf(buf, BUFSIZ, "%f", val); 
+#endif
+		shader(isst, "myplugin", buf); }
 	if(isst->ui && isst->uic < 0.99999) { isst->uic += 2*isst->dt; if(isst->uic > 1.0) isst->uic = 1; }
 	if(!isst->ui && isst->uic > 0.00001) { isst->uic -= 2*isst->dt; if(isst->uic < 0.0) isst->uic = 0; }
     }
