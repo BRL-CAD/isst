@@ -355,6 +355,13 @@ if(GTK2_FIND_VERSION)
                           GTK2_MINOR_VERSION
                           GTK2_PATCH_VERSION
                           ${GTK2_GTK_INCLUDE_DIR}/gtk/gtkversion.h)
+	if(GTK2_MAJOR_VERSION} STREQUAL "")
+	    message(STATUS "Didn't find GTK2 variables, trying plain GTK")
+	    _GTK2_GET_VERSION(GTK_MAJOR_VERSION
+			      GTK_MINOR_VERSION
+			      GTK_PATCH_VERSION
+			      ${GTK2_GTK_INCLUDE_DIR}/gtk/gtkversion.h)
+	endif()
         set(GTK2_VERSION
             ${GTK2_MAJOR_VERSION}.${GTK2_MINOR_VERSION}.${GTK2_PATCH_VERSION})
         if(GTK2_FIND_VERSION_EXACT)
