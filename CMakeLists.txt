@@ -38,12 +38,22 @@ if (NOT BRLCAD_FOUND)
         RETURN()
 endif (NOT BRLCAD_FOUND)
 
-add_executable(isst_sdl WIN32 MACOSX_BUNDLE ${ISST_SDL_SOURCES})
-add_executable(isst_gtk WIN32 MACOSX_BUNDLE ${ISST_GTK_SOURCES})
 include_directories(${OPENGL_INCLUDE_DIR} ${SDL_INCLUDE_DIR} ${GTK2_INCLUDE_DIRS} ${BRLCAD_INC_DIRS})
 set(MYLIBS ${OPENGL_gl_LIBRARY} ${_BRLCAD_LIBRARY_bu} ${_BRLCAD_LIBRARY_bn} ${_BRLCAD_LIBRARY_rt} ${_BRLCAD_LIBRARY_tie} ${_BRLCAD_LIBRARY_render})
-target_link_libraries(isst_sdl ${SDL_LIBRARY} ${MYLIBS})
+
+add_executable(isst_gtk WIN32 MACOSX_BUNDLE ${ISST_GTK_SOURCES})
 target_link_libraries(isst_gtk ${GTK2_LIBRARIES} ${MYLIBS})
+
+add_library(myplugin SHARED sdl/myplugin.c)
+target_link_libraries(myplugin ${_BRLCAD_LIBRARY_bu} ${_BRLCAD_LIBRARY_bn} ${_BRLCAD_LIBRARY_rt} ${_BRLCAD_LIBRARY_tie} ${_BRLCAD_LIBRARY_render})
+
+add_executable(isst_sdl WIN32 MACOSX_BUNDLE ${ISST_SDL_SOURCES})
+target_link_libraries(isst_sdl ${SDL_LIBRARY} ${MYLIBS})
+
+if(APPLE)
+    add_custom_command(TARGET isst_sdl POST_BUILD DEPENDS myplugin isst_sdl COMMAND mkdir -p ./isst_sdl.app/Contents/Resources && install ./libmyplugin.dylib ./isst_sdl.app/Contents/Resources/libmyplugin.dylib DEPENDS)
+    add_dependencies(isst_sdl myplugin)
+endif(APPLE)
 
 set_property(DIRECTORY
 	PROPERTY COMPILE_DEFINITIONS	HAVE_FCNTL_H=${HAVE_FCNTL_H}
