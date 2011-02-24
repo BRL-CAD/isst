@@ -163,7 +163,6 @@ SET(LIBS_TO_SEARCH_FOR
 	steputils
 	sysv
 	termio
-	tie
 	utahrle
 	wdb
 )
