@@ -1,5 +1,5 @@
 
-bin_PROGRAMS=isst_sdl ffu
+bin_PROGRAMS=isst_sdl
 lib_LTLIBRARIES=libmyplugin.la
 
 isst_sdl_SOURCES=main.c event.c

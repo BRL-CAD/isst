@@ -111,14 +111,6 @@ resize_isst(struct isst_s *isst)
 	isst->texdata = realloc(isst->texdata, isst->camera.w * isst->camera.h * 3);
 	glTexImage2D (GL_TEXTURE_2D, 0, GL_RGB, isst->camera.w, isst->camera.h, 0, GL_RGB, GL_UNSIGNED_BYTE, isst->texdata);
 
-	glGenTextures(1, &(isst->fonttexid));
-	glBindTexture (GL_TEXTURE_2D, isst->fonttexid);
-	glPixelStorei (GL_UNPACK_ALIGNMENT, 1);
-	glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexEnvf (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-	glTexImage2D (GL_TEXTURE_2D, 0, GL_RGB, FONT_SIZE, FONT_SIZE, 0, GL_RGB, GL_UNSIGNED_BYTE, isst->fonttextbuf);
-
 	glDisable(GL_LIGHTING);
 	glViewport(0,0,isst->r.w, isst->r.h);
 	glMatrixMode (GL_PROJECTION);
@@ -187,8 +179,8 @@ prep_isst(int argc, const char **argv)
     render_camera_init(&isst->camera, bu_avail_cpus());
     isst->camera.type = RENDER_CAMERA_PERSPECTIVE;
     isst->camera.fov = 25;
-    VSETALL(isst->camera.pos.v, isst->tie->radius);
-    VMOVE(isst->camera.focus.v, isst->tie->mid);
+    VSETALL(isst->camera.pos, isst->tie->radius);
+    VMOVE(isst->camera.focus, isst->tie->mid);
     render_phong_init(&isst->camera.render, NULL);
     return isst;
 }
@@ -226,31 +218,6 @@ paint_ogl(struct isst_s *isst)
     glTexCoord2d(1, 1); glVertex3f(isst->r.w,			isst->r.h*(.75+.25*(1-isst->uic)),	0);
 #endif
     glEnd();
-    if(*isst->cmdbuf) {
-	char *cmd = isst->cmdbuf;
-	int i = 0;
-        double FONTSIZE;
-
-	FONTSIZE = isst->r.h / 12.0;
-
-        glColor3f(0,1,0.5);
-	glBindTexture(GL_TEXTURE_2D, isst->fonttexid);
-	while(*cmd) {
-	    double x, y, s = 1.0/16.0;
-	    x = (double)((*cmd)&0xf)/16.0;
-	    y = (double)((*cmd)>>4)/16.0;
-
-	    glBegin(GL_TRIANGLE_STRIP);
-	    glTexCoord2d(x, y); glVertex3f(0.5*i*FONTSIZE, isst->r.h, 0);
-	    glTexCoord2d(x, y+s); glVertex3f(0.5*i*FONTSIZE, isst->r.h-FONTSIZE, 0);
-	    i++;
-	    glTexCoord2d(x+s, y); glVertex3f(0.5*i*FONTSIZE, isst->r.h, 0);
-	    glTexCoord2d(x+s, y+s); glVertex3f(0.5*i*FONTSIZE, isst->r.h-FONTSIZE, 0);
-
-	    glEnd();
-	    cmd++;
-	}
-    }
     SDL_GL_SwapBuffers();
     isst->dirty = 0;
 #endif
@@ -340,22 +307,7 @@ main(int argc, char **argv)
     isst->camera.gridsize = isst->tie->radius * 2;
     isst->ft = 0;
 
-#ifdef HAVE_OPENGL
-    {
-	int fd;
-
-	isst->fonttextbuf = malloc(1024*1024*3);
-	fd = open("trebuchet_bold.pix", O_RDONLY);
-	if(fd == -1) {
-	    perror("Font file");
-	    exit(-1);
-	}
-	read(fd, isst->fonttextbuf, 3*FONT_SIZE*FONT_SIZE);
-	close(fd);
-    }
-#endif
-
-    if(render_shader_load_plugin(".libs/libmyplugin.0.dylib")) {
+    if(render_shader_load_plugin(".libs/libmyplugin.so")) {
 	bu_log("Failed loading plugin\n");
     }
     resize_isst(isst);

@@ -21,7 +21,7 @@ struct hitdata_s {
 };
 
 static void *
-hit(tie_ray_t *ray, tie_id_t *id, tie_tri_t *tri, void *ptr)
+hit(struct tie_ray_s *UNUSED(ray), struct tie_id_s *id, struct tie_tri_s *tri, void *ptr)
 {
     struct hitdata_s *hd = (struct hitdata_s *)ptr;
     fastf_t dist;
@@ -60,9 +60,9 @@ hit(tie_ray_t *ray, tie_id_t *id, tie_tri_t *tri, void *ptr)
 }
 
 void
-adrt_plugin_work(render_t *r, tie_t *t, tie_ray_t *ray, TIE_3 *pixel)
+adrt_plugin_work(render_t *r, struct tie_s *t, struct tie_ray_s *ray, TIE_3 *pixel)
 {
-    tie_id_t id;
+    struct tie_id_s id;
     struct hitdata_s hitdata;
     hitdata.render = r;
     hitdata.a = 1.0;
@@ -71,6 +71,7 @@ adrt_plugin_work(render_t *r, tie_t *t, tie_ray_t *ray, TIE_3 *pixel)
 
     tie_work(t, ray, &id, hit, &hitdata);
 	    VSETALL(pixel->v, hitdata.color);
+#if 0
     switch(hitdata.in) {
 	case HIT_IN:
 	    VSET(pixel->v, 1, 0, 0);
@@ -82,10 +83,11 @@ adrt_plugin_work(render_t *r, tie_t *t, tie_ray_t *ray, TIE_3 *pixel)
 	    VSET(pixel->v, 0, 1, 0);
 	    break;
     }
+#endif
 }
 
 void
-adrt_plugin_free(render_t *r)
+adrt_plugin_free(render_t *UNUSED(r))
 {
     return;
 }

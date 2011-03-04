@@ -48,12 +48,12 @@ move_walk(struct isst_s * isst, double dist)
     vect_t vec;
 
     isst->dirty = 1;
-    VSUB2(vec, isst->camera.focus.v, isst->camera.pos.v);
+    VSUB2(vec, isst->camera.focus, isst->camera.pos);
     VUNITIZE(vec);
     VSCALE(vec, vec, isst->dt * dist * isst->tie->radius);
-    VADD2(isst->camera.pos.v, isst->camera.pos.v, vec);
+    VADD2(isst->camera.pos, isst->camera.pos, vec);
     if(dist < 0) VSCALE(vec, vec, -1);
-    VADD2(isst->camera.focus.v, isst->camera.pos.v, vec);
+    VADD2(isst->camera.focus, isst->camera.pos, vec);
 }
 
 void 
@@ -63,20 +63,20 @@ move_strafe(struct isst_s * isst, double dist)
 
     isst->dirty = 1;
     VSET(up, 0, 0, 1);
-    VSUB2(dir, isst->camera.focus.v, isst->camera.pos.v);
+    VSUB2(dir, isst->camera.focus, isst->camera.pos);
     VCROSS(vec, dir, up);
     VUNITIZE(vec);
     VSCALE(vec, vec, isst->dt * dist * isst->tie->radius);
-    VADD2(isst->camera.pos.v, isst->camera.pos.v, vec);
-    VADD2(isst->camera.focus.v, isst->camera.pos.v, dir);
+    VADD2(isst->camera.pos, isst->camera.pos, vec);
+    VADD2(isst->camera.focus, isst->camera.pos, dir);
 }
 
 void 
 move_float(struct isst_s * isst, double dist)
 {
     isst->dirty = 1;
-    isst->camera.pos.v[2] += isst->tie->radius*isst->dt*dist;
-    isst->camera.focus.v[2] += isst->tie->radius*isst->dt*dist;
+    isst->camera.pos[2] += isst->tie->radius*isst->dt*dist;
+    isst->camera.focus[2] += isst->tie->radius*isst->dt*dist;
 }
 
 void
@@ -85,9 +85,9 @@ zero_view(struct isst_s *isst)
     vect_t vec;
 
     isst->dirty = 1;
-    VSUB2(vec, isst->tie->mid, isst->camera.pos.v);
+    VSUB2(vec, isst->tie->mid, isst->camera.pos);
     VUNITIZE(vec);
-    VADD2(isst->camera.focus.v, isst->camera.pos.v, vec);
+    VADD2(isst->camera.focus, isst->camera.pos, vec);
 }
 
 void 
@@ -98,7 +98,7 @@ look(struct isst_s * isst, double x, double y)
 
     isst->dirty = 1;
     /* generate az/el (oddly, this generates degrees instead of radians) */
-    VSUB2(vec, isst->camera.pos.v, isst->camera.focus.v);
+    VSUB2(vec, isst->camera.pos, isst->camera.focus);
     VUNITIZE(vec);
     AZEL_FROM_V3DIR(az, el, vec);
     az = az * -DEG2RAD - x;
@@ -112,7 +112,7 @@ look(struct isst_s * isst, double x, double y)
 
     /* generate the new lookat point */
     V3DIR_FROM_AZEL(vec, az, el);
-    VADD2(isst->camera.focus.v, isst->camera.pos.v, vec);
+    VADD2(isst->camera.focus, isst->camera.pos, vec);
 }
 
 void
@@ -216,11 +216,11 @@ do_loop(struct isst_s *isst)
 				      /* clear all the hit list */
 				      for(BU_LIST_FOR(mesh, adrt_mesh_s, &isst->meshes->l))
 					  mesh->flags &= ~ADRT_MESH_HIT;
-				      VSUB2(vec, isst->camera.focus.v, isst->camera.pos.v);
+				      VSUB2(vec, isst->camera.focus, isst->camera.pos);
 #if _WIN32
-				      sprintf(buf, "#(%f %f %f)  #(%f %f %f)", V3ARGS(isst->camera.pos.v), V3ARGS(vec));
+				      sprintf(buf, "#(%f %f %f)  #(%f %f %f)", V3ARGS(isst->camera.pos), V3ARGS(vec));
 #else
-				      snprintf(buf, BUFSIZ, "#(%f %f %f)  #(%f %f %f)", V3ARGS(isst->camera.pos.v), V3ARGS(vec));
+				      snprintf(buf, BUFSIZ, "#(%f %f %f)  #(%f %f %f)", V3ARGS(isst->camera.pos), V3ARGS(vec));
 #endif
 				      shader(isst, "cut", buf); 
 				      move_strafe(isst, -0.05 / isst->dt);
@@ -249,7 +249,7 @@ do_loop(struct isst_s *isst)
 #else
 				      snprintf(buf, BUFSIZ, "%f", val); 
 #endif
-				      shader(isst, (const char *)render_shader_load_plugin(".libs/libmyplugin.0.dylib"), buf);
+				      shader(isst, (const char *)render_shader_load_plugin(".libs/libmyplugin.so"), buf);
 				      break;
 			    case SDLK_UP:
 			    case 'e': vel[1] = 1; break;

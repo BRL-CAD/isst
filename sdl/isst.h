@@ -33,9 +33,8 @@ struct isst_s {
     int ogl, sflags, w, h, gs, ui, dirty, ft;
     double dt, fps, uic;
 #ifdef HAVE_OPENGL
-    int texid, fonttexid;
+    int texid;
     void *texdata;
-    void *fonttextbuf;
 #endif
     char *cmdbuf;
 };
