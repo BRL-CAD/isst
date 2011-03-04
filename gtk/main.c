@@ -39,7 +39,7 @@
 
 #include <pthread.h>
 
-#include "tie/tie.h"
+#include "tie.h"
 #include "tie/adrt.h"
 
 #include <gtk/gtk.h>

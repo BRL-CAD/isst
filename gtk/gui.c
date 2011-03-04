@@ -47,7 +47,7 @@
 #endif
 
 #include <stdint.h>
-#include "tie/tie.h"
+#include "tie.h"
 #include "tie/camera.h"
 
 #include "tie/adrt.h"
@@ -107,8 +107,8 @@ char filename[BUFSIZ];	/* the .g we loaded up */
 
 /* Update the camera data based on the current azimuth and elevation */
 #define AZEL_TO_FOC() { \
-    V3DIR_FROM_AZEL( isst.camera_foc.v, isst.camera_az * DEG2RAD, isst.camera_el * DEG2RAD ); \
-	VSUB2( isst.camera_foc.v, isst.camera_pos.v, isst.camera_foc.v); }
+    V3DIR_FROM_AZEL( isst.camera_foc, isst.camera_az * DEG2RAD, isst.camera_el * DEG2RAD ); \
+	VSUB2( isst.camera_foc, isst.camera_pos, isst.camera_foc); }
 
 static void update_camera_widgets ();
 static void update_view_callback (GtkWidget *widget, gpointer ptr);
@@ -278,9 +278,9 @@ static void
 isst_update_gui ()
 {
     gtk_spin_button_set_value (GTK_SPIN_BUTTON (isst_grid_spin), isst.camera_grid);
-    gtk_spin_button_set_value (GTK_SPIN_BUTTON (isst_posx_spin), isst.camera_pos.v[0]);
-    gtk_spin_button_set_value (GTK_SPIN_BUTTON (isst_posy_spin), isst.camera_pos.v[1]);
-    gtk_spin_button_set_value (GTK_SPIN_BUTTON (isst_posz_spin), isst.camera_pos.v[2]);
+    gtk_spin_button_set_value (GTK_SPIN_BUTTON (isst_posx_spin), isst.camera_pos[0]);
+    gtk_spin_button_set_value (GTK_SPIN_BUTTON (isst_posy_spin), isst.camera_pos[1]);
+    gtk_spin_button_set_value (GTK_SPIN_BUTTON (isst_posz_spin), isst.camera_pos[2]);
     gtk_spin_button_set_value (GTK_SPIN_BUTTON (isst_azim_spin), isst.camera_az);
     gtk_spin_button_set_value (GTK_SPIN_BUTTON (isst_elev_spin), isst.camera_el);
     gtk_spin_button_set_value (GTK_SPIN_BUTTON (isst_cellx_spin), isst.mouse_x);
@@ -290,8 +290,8 @@ isst_update_gui ()
 
 #define VIEW(n, p, s, a, e) \
 static void menuitem_view_##n##_callback () { \
-    isst.camera_pos = isst.geom_center; \
-	isst.camera_pos.v[p] s##= isst.geom_radius; \
+    VMOVE(isst.camera_pos, isst.geom_center); \
+	isst.camera_pos[p] s##= isst.geom_radius; \
 	isst.camera_az = a; \
 	isst.camera_el = e; \
 	isst_update_gui (); \
@@ -306,7 +306,7 @@ VIEW(back,  0, -, 180, 0);
 VIEW(right, 1, -, 270, 0);
 static void menuitem_view_aiieee_callback () {
 	vect_t vec;
-	VSUB2(vec, isst.geom_center.v, isst.camera_pos.v);
+	VSUB2(vec, isst.geom_center, isst.camera_pos);
 	VUNITIZE(vec);
 	printf("%g %g %g\n", V3ARGS(vec));
 	AZEL_FROM_V3DIR(isst.camera_az, isst.camera_el, vec);
@@ -469,7 +469,7 @@ save_screenshot_callback (GtkWidget *widget, gpointer ptr)
     sprintf (string, "date: %s\n", ltime);
     strcat (overlay, string);
 
-    sprintf (string, "position: %.3f %.3f %.3f (m)\n", isst.camera_pos.v[0], isst.camera_pos.v[1], isst.camera_pos.v[2]);
+    sprintf (string, "position: %.3f %.3f %.3f (m)\n", isst.camera_pos[0], isst.camera_pos[1], isst.camera_pos[2]);
     strcat (overlay, string);
 
     sprintf (string, "az: %.3f, el: %.3f (deg)\n", isst.camera_az, isst.camera_el);
@@ -586,7 +586,7 @@ VIEW_CB(view_depth, DEPTH);
 VIEW_CB(view_component, COMPONENT);
 VIEW_CALLBACK(view_cut, CUT, isst.camera_type=RENDER_CAMERA_PERSPECTIVE);
 VIEW_CALLBACK(flos, FLOS, isst.camera_type=RENDER_CAMERA_PERSPECTIVE;
-    VSET(isst.shotline_pos.v,  gtk_spin_button_get_value (GTK_SPIN_BUTTON (isst_flos_posx_spin)),  gtk_spin_button_get_value (GTK_SPIN_BUTTON (isst_flos_posy_spin)),  gtk_spin_button_get_value (GTK_SPIN_BUTTON (isst_flos_posz_spin))));
+    VSET(isst.shotline_pos,  gtk_spin_button_get_value (GTK_SPIN_BUTTON (isst_flos_posx_spin)),  gtk_spin_button_get_value (GTK_SPIN_BUTTON (isst_flos_posy_spin)),  gtk_spin_button_get_value (GTK_SPIN_BUTTON (isst_flos_posz_spin))));
 VIEW_CALLBACK(shotline, SHOTLINE, 
 	isst.camera_type = RENDER_CAMERA_ORTHOGRAPHIC;
 	isst.mouse_x = (int16_t) gtk_spin_button_get_value (GTK_SPIN_BUTTON (isst_cellx_spin));
@@ -624,19 +624,19 @@ load_g_project_callback (const char *file, const char **region)
 	    isst.pid = 0;	/* no project id's here, but not -1 */
 
 	    sleep(0);	/* O.o get nan's without this. */
-	    VMOVE(isst.geom_min.v, tie->min.v);
-	    VMOVE(isst.geom_max.v, tie->max.v);
-	    VMOVE(isst.geom_center.v, tie->mid);
-	    VMOVE(isst.camera_foc.v,  isst.geom_center.v);
+	    VMOVE(isst.geom_min, tie->min);
+	    VMOVE(isst.geom_max, tie->max);
+	    VMOVE(isst.geom_center, tie->mid);
+	    VMOVE(isst.camera_foc,  isst.geom_center);
 	    isst.camera_grid = tie->radius*2;
 
-	    VSUB2SCALE(mid, isst.geom_max.v, isst.geom_min.v, 0.5);
+	    VSUB2SCALE(mid, isst.geom_max, isst.geom_min, 0.5);
 
 	    isst.geom_radius = tie->radius;
 
 	    V3DIR_FROM_AZEL(mid, isst.camera_az, isst.camera_el);
 	    VSCALE(mid, mid, -isst.geom_radius);
-	    VADD2(isst.camera_pos.v, isst.camera_foc.v, mid);
+	    VADD2(isst.camera_pos, isst.camera_foc, mid);
 	    gtk_spin_button_set_value (GTK_SPIN_BUTTON (isst_mouse_speed_spin), isst.geom_radius * 0.002);
 	    gtk_spin_button_set_value (GTK_SPIN_BUTTON (isst_grid_spin), isst.geom_radius);
 	    gtk_spin_button_set_value (GTK_SPIN_BUTTON (isst_grid_spin), isst.camera_grid);
@@ -684,10 +684,10 @@ shotline_load_activated(GtkTreeView *treeview, GtkTreePath *path, GtkTreeViewCol
 	gtk_tree_model_get(isst_saved_shotline_store, &iter, 1, &str, -1);
 	i = sscanf(str, shotfilefmt,
 			&shot,
-			&isst.camera_pos.v[0], &isst.camera_pos.v[1], &isst.camera_pos.v[2],
+			&isst.camera_pos[0], &isst.camera_pos[1], &isst.camera_pos[2],
 			&isst.camera_az, &isst.camera_el, &w, &h);
-	gtk_spin_button_set_value (GTK_SPIN_BUTTON (isst_cellx_spin), w * (tfloat) isst.context_width);
-	gtk_spin_button_set_value (GTK_SPIN_BUTTON (isst_celly_spin), h * (tfloat) isst.context_height);
+	gtk_spin_button_set_value (GTK_SPIN_BUTTON (isst_cellx_spin), w * (fastf_t) isst.context_width);
+	gtk_spin_button_set_value (GTK_SPIN_BUTTON (isst_celly_spin), h * (fastf_t) isst.context_height);
 	g_free(str);
 	gtk_widget_destroy(GTK_WIDGET(usr));
     }
@@ -782,7 +782,7 @@ update_view_callback (GtkWidget *widget, gpointer ptr)
     GtkWidget **wlist = (GtkWidget **)ptr;
 
     /* Update camera position */
-    VSET(isst.camera_pos.v,  gtk_spin_button_get_value (GTK_SPIN_BUTTON (wlist[0])),  gtk_spin_button_get_value (GTK_SPIN_BUTTON (wlist[1])),  gtk_spin_button_get_value (GTK_SPIN_BUTTON (wlist[2])));
+    VSET(isst.camera_pos,  gtk_spin_button_get_value (GTK_SPIN_BUTTON (wlist[0])),  gtk_spin_button_get_value (GTK_SPIN_BUTTON (wlist[1])),  gtk_spin_button_get_value (GTK_SPIN_BUTTON (wlist[2])));
 
     /* Update camera azimuth and elevation */
     isst.camera_az = gtk_spin_button_get_value (GTK_SPIN_BUTTON (wlist[3]));
@@ -839,8 +839,8 @@ apply_delta_callback (GtkWidget *widget, gpointer ptr)
     cellx = (int16_t) gtk_spin_button_get_value (GTK_SPIN_BUTTON (isst_cellx_spin));
     celly = (int16_t) gtk_spin_button_get_value (GTK_SPIN_BUTTON (isst_celly_spin));
 
-    gtk_spin_button_set_value (GTK_SPIN_BUTTON (isst_cellx_spin), cellx + (((tfloat) deltax) / ((tfloat) 1000*isst.camera_grid)) * (tfloat) isst.context_width);
-    gtk_spin_button_set_value (GTK_SPIN_BUTTON (isst_celly_spin), celly - (((tfloat) deltay) / ((tfloat) 1000*isst.camera_grid)) * (tfloat) isst.context_height);
+    gtk_spin_button_set_value (GTK_SPIN_BUTTON (isst_cellx_spin), cellx + (((fastf_t) deltax) / ((fastf_t) 1000*isst.camera_grid)) * (fastf_t) isst.context_width);
+    gtk_spin_button_set_value (GTK_SPIN_BUTTON (isst_celly_spin), celly - (((fastf_t) deltay) / ((fastf_t) 1000*isst.camera_grid)) * (fastf_t) isst.context_height);
 
     gtk_spin_button_set_value (GTK_SPIN_BUTTON (isst_deltax_spin), 0);
     gtk_spin_button_set_value (GTK_SPIN_BUTTON (isst_deltay_spin), 0);	
@@ -884,9 +884,9 @@ save_shotline_callback (GtkWidget *widget, gpointer ptr)
 	snprintf(hn, BUFSIZ, "unknown");
 
     snprintf (ss, BUFSIZ, shotfilefmt,
-	    shotname, V3ARGS(isst.camera_pos.v), isst.camera_az, isst.camera_el,
-	    gtk_spin_button_get_value (GTK_SPIN_BUTTON (isst_cellx_spin)) / (tfloat) isst.context_width,
-	    gtk_spin_button_get_value (GTK_SPIN_BUTTON (isst_celly_spin)) / (tfloat) isst.context_height);
+	    shotname, V3ARGS(isst.camera_pos), isst.camera_az, isst.camera_el,
+	    gtk_spin_button_get_value (GTK_SPIN_BUTTON (isst_cellx_spin)) / (fastf_t) isst.context_width,
+	    gtk_spin_button_get_value (GTK_SPIN_BUTTON (isst_celly_spin)) / (fastf_t) isst.context_height);
 
     gtk_list_store_append(isst_saved_shotline_store, &iter);
     gtk_list_store_set(isst_saved_shotline_store, &iter, 0, shotname, 1, ss, -1);
@@ -1007,9 +1007,9 @@ component_deselect_all_callback (GtkWidget *widget, gpointer ptr)
 static void
 flos_use_current_position_callback (GtkWidget *widget, gpointer ptr)
 {
-    gtk_spin_button_set_value (GTK_SPIN_BUTTON (isst_flos_posx_spin), isst.camera_pos.v[0]);
-    gtk_spin_button_set_value (GTK_SPIN_BUTTON (isst_flos_posy_spin), isst.camera_pos.v[1]);
-    gtk_spin_button_set_value (GTK_SPIN_BUTTON (isst_flos_posz_spin), isst.camera_pos.v[2]);
+    gtk_spin_button_set_value (GTK_SPIN_BUTTON (isst_flos_posx_spin), isst.camera_pos[0]);
+    gtk_spin_button_set_value (GTK_SPIN_BUTTON (isst_flos_posy_spin), isst.camera_pos[1]);
+    gtk_spin_button_set_value (GTK_SPIN_BUTTON (isst_flos_posz_spin), isst.camera_pos[2]);
 }
 
 
@@ -1019,45 +1019,48 @@ fire_shotline_callback (GtkWidget *widget, gpointer ptr)
     uint32_t size;
     uint8_t op;
     render_camera_t camera;
-    tie_ray_t ray;
-    TIE_3 v1, v2;
+    struct tie_ray_s ray;
+    point_t v1, v2;
 
     /* Calculate Position and Direction of ray for shotline based on Cell coordinates */
     render_camera_init (&camera, 1);
     camera.w = isst.context_width;
     camera.h = isst.context_height;
     camera.type = RENDER_CAMERA_ORTHOGRAPHIC;
-    camera.pos = isst.camera_pos;
-    camera.focus = isst.camera_foc;
+    VMOVE(camera.pos, isst.camera_pos);
+    VMOVE(camera.focus, isst.camera_foc);
     camera.gridsize = isst.camera_grid;
     render_camera_prep (&camera);
 
-    ray.pos = camera.view_list[0].pos;
-    ray.dir = camera.view_list[0].top_l;
+    VMOVE(ray.pos, camera.view_list[0].pos);
+    VMOVE(ray.dir, camera.view_list[0].top_l);
 
-    VSCALE(v1.v,  camera.view_list[0].step_x.v,  gtk_spin_button_get_value (GTK_SPIN_BUTTON (isst_cellx_spin)));
-    VSCALE(v2.v,  camera.view_list[0].step_y.v,  gtk_spin_button_get_value (GTK_SPIN_BUTTON (isst_celly_spin)));
-    VADD2(ray.pos.v,  ray.pos.v,  v1.v);
-    VADD2(ray.pos.v,  ray.pos.v,  v2.v);
+    VSCALE(v1,  camera.view_list[0].step_x,  gtk_spin_button_get_value (GTK_SPIN_BUTTON (isst_cellx_spin)));
+    VSCALE(v2,  camera.view_list[0].step_y,  gtk_spin_button_get_value (GTK_SPIN_BUTTON (isst_celly_spin)));
+    VADD2(ray.pos,  ray.pos,  v1);
+    VADD2(ray.pos,  ray.pos,  v2);
 
     if(isst.work_frame == isst_local_work_frame) {
 	char *msg = NULL;
 	int dlen;
-	TIE_3 inhit;
+	point_t inhit;
 	uint32_t ind, num, i;
 	char text[256], thickness[16];
 	uint8_t c;
 	GtkTreeIter iter;
-	tfloat t;
+	fastf_t t;
 
 	ray.depth = 0;
 	render_util_shotline_list(tie, &ray, (void **)&msg, &dlen);
 
 	ind = 0;
 	/* In-Hit */
-	TCOPY(TIE_3, msg, ind, &inhit, 0);
-	ind += sizeof (TIE_3);
-	sprintf (text, "%.3f %.3f %.3f", inhit.v[0], inhit.v[1], inhit.v[2]);
+	memcpy(&inhit, msg+ind, sizeof(point_t));
+	/*
+	TCOPY(point_t, msg, ind, &inhit, 0);
+	*/
+	ind += sizeof (point_t);
+	sprintf (text, "%.3f %.3f %.3f", inhit[0], inhit[1], inhit[2]);
 	gtk_entry_set_text (GTK_ENTRY (isst_inhit_entry), text);
 
 	TCOPY(uint32_t, msg, ind, &num, 0);
@@ -1073,9 +1076,9 @@ fire_shotline_callback (GtkWidget *widget, gpointer ptr)
 	    bcopy(&msg[ind], text, c);
 	    ind += c;
 
-	    TCOPY(tfloat, msg, ind, &t, 0);
+	    TCOPY(fastf_t, msg, ind, &t, 0);
 	    t *= 1000; /* Convert to milimeters */
-	    ind += sizeof (tfloat);
+	    ind += sizeof (fastf_t);
 	    sprintf (thickness, "%.1f", t);
 
 	    gtk_list_store_append (isst_shotline_store, &iter);
@@ -1083,10 +1086,10 @@ fire_shotline_callback (GtkWidget *widget, gpointer ptr)
 	}
 
 	/* Shotline position and direction */
-	TCOPY(TIE_3, msg, ind, &isst.shotline_pos, 0);
-	ind += sizeof (TIE_3);
-	TCOPY(TIE_3, msg, ind, &isst.shotline_dir, 0);
-	ind += sizeof (TIE_3);
+	memcpy( &isst.shotline_pos, msg+ind, sizeof(point_t));
+	ind += sizeof (point_t);
+	memcpy( &isst.shotline_dir, msg+ind, sizeof(point_t));
+	ind += sizeof (point_t);
     } else {
 	/* Send request for next frame */
 #if 0
@@ -1094,7 +1097,7 @@ fire_shotline_callback (GtkWidget *widget, gpointer ptr)
 	tienet_send (isst.socket, &op, 1);
 
 	/* size */
-	size = 1 + 2 + 2 * sizeof (TIE_3);
+	size = 1 + 2 + 2 * sizeof (point_t);
 	tienet_send (isst.socket, &size, 4);
 
 	/* slave function */
@@ -1105,8 +1108,8 @@ fire_shotline_callback (GtkWidget *widget, gpointer ptr)
 	tienet_send (isst.socket, &isst.wid, 2);
 
 	/* Send Position and Direction */
-	tienet_send (isst.socket, ray.pos.v, sizeof (TIE_3));
-	tienet_send (isst.socket, ray.dir.v, sizeof (TIE_3));
+	tienet_send (isst.socket, ray.pos, sizeof (point_t));
+	tienet_send (isst.socket, ray.dir, sizeof (point_t));
 #else
 	bu_exit(-1, "Distributed stuff disabled\n");
 #endif
@@ -1123,9 +1126,9 @@ context_configure_event( GtkWidget *widget, GdkEventConfigure *event )
 static void
 update_camera_widgets ()
 {
-    gtk_spin_button_set_value (GTK_SPIN_BUTTON (isst_posx_spin), isst.camera_pos.v[0]);
-    gtk_spin_button_set_value (GTK_SPIN_BUTTON (isst_posy_spin), isst.camera_pos.v[1]);
-    gtk_spin_button_set_value (GTK_SPIN_BUTTON (isst_posz_spin), isst.camera_pos.v[2]);
+    gtk_spin_button_set_value (GTK_SPIN_BUTTON (isst_posx_spin), isst.camera_pos[0]);
+    gtk_spin_button_set_value (GTK_SPIN_BUTTON (isst_posy_spin), isst.camera_pos[1]);
+    gtk_spin_button_set_value (GTK_SPIN_BUTTON (isst_posz_spin), isst.camera_pos[2]);
 
     gtk_spin_button_set_value (GTK_SPIN_BUTTON (isst_azim_spin), isst.camera_az);
     gtk_spin_button_set_value (GTK_SPIN_BUTTON (isst_elev_spin), isst.camera_el);
@@ -1212,12 +1215,12 @@ context_motion_event (GtkWidget *widget, GdkEventMotion *event)
 	}
 	else
 	{
-	    TIE_3 vec;
+	    point_t vec;
 
 	    /* backward and forward movement */
-	    VSUB2(vec.v,  isst.camera_foc.v,  isst.camera_pos.v);
-	    VSCALE(vec.v,  vec.v,  (isst.mouse_speed*-dy));
-	    VADD2(isst.camera_pos.v,  isst.camera_pos.v,  vec.v);
+	    VSUB2(vec,  isst.camera_foc,  isst.camera_pos);
+	    VSCALE(vec,  vec,  (isst.mouse_speed*-dy));
+	    VADD2(isst.camera_pos,  isst.camera_pos,  vec);
 
 	    update_camera_widgets ();
 	}
@@ -1225,25 +1228,25 @@ context_motion_event (GtkWidget *widget, GdkEventMotion *event)
 
     if (event->state & GDK_BUTTON2_MASK)
     {
-	TIE_3 up, side, look;
+	point_t up, side, look;
 
 	/* relative up/down left/right movement */
 
-	VSET(up.v,  0,  0,  1);
-	VSUB2(look.v,  isst.camera_foc.v,  isst.camera_pos.v);
-	VUNITIZE(look.v);
+	VSET(up,  0,  0,  1);
+	VSUB2(look,  isst.camera_foc,  isst.camera_pos);
+	VUNITIZE(look);
 	/* side vector */
-	VCROSS(side.v,  look.v,  up.v);
+	VCROSS(side,  look,  up);
 	/* up vector */
-	VCROSS(up.v,  look.v,  side.v);
+	VCROSS(up,  look,  side);
 
 	/* left/right */
-	VSCALE(side.v,  side.v,  isst.mouse_speed*dx);
-	VADD2(isst.camera_pos.v,  isst.camera_pos.v,  side.v);
+	VSCALE(side,  side,  isst.mouse_speed*dx);
+	VADD2(isst.camera_pos,  isst.camera_pos,  side);
 
 	/* up/down */
-	VSCALE(up.v,  up.v,  isst.mouse_speed*dy);
-	VADD2(isst.camera_pos.v,  isst.camera_pos.v,  up.v);
+	VSCALE(up,  up,  isst.mouse_speed*dy);
+	VADD2(isst.camera_pos,  isst.camera_pos,  up);
 
 	update_camera_widgets ();
     }
@@ -1515,7 +1518,7 @@ isst_gui ()
 
 	isst_posx_spin = gtk_spin_button_new_with_range (-100.0, 100.0, 0.1);
 	gtk_table_attach_defaults (GTK_TABLE (table), isst_posx_spin, 1, 2, 0, 1);
-	gtk_spin_button_set_value (GTK_SPIN_BUTTON (isst_posx_spin), isst.camera_pos.v[0]);
+	gtk_spin_button_set_value (GTK_SPIN_BUTTON (isst_posx_spin), isst.camera_pos[0]);
 	gtk_spin_button_set_digits (GTK_SPIN_BUTTON (isst_posx_spin), 3);
 
 	/* Position Y */
@@ -1524,7 +1527,7 @@ isst_gui ()
 
 	isst_posy_spin = gtk_spin_button_new_with_range (-100.0, 100.0, 0.1);
 	gtk_table_attach_defaults (GTK_TABLE (table), isst_posy_spin, 1, 2, 1, 2);
-	gtk_spin_button_set_value (GTK_SPIN_BUTTON (isst_posy_spin), isst.camera_pos.v[1]);
+	gtk_spin_button_set_value (GTK_SPIN_BUTTON (isst_posy_spin), isst.camera_pos[1]);
 	gtk_spin_button_set_digits (GTK_SPIN_BUTTON (isst_posy_spin), 3);
 
 	/* Position Z */
@@ -1533,7 +1536,7 @@ isst_gui ()
 
 	isst_posz_spin = gtk_spin_button_new_with_range (-100.0, 100.0, 0.1);
 	gtk_table_attach_defaults (GTK_TABLE (table), isst_posz_spin, 1, 2, 2, 3);
-	gtk_spin_button_set_value (GTK_SPIN_BUTTON (isst_posz_spin), isst.camera_pos.v[2]);
+	gtk_spin_button_set_value (GTK_SPIN_BUTTON (isst_posz_spin), isst.camera_pos[2]);
 	gtk_spin_button_set_digits (GTK_SPIN_BUTTON (isst_posz_spin), 3);
 
 	/* Azimuth */
@@ -1810,7 +1813,7 @@ isst_setup ()
     /* Camera Info */
     isst.context_width = ISST_CONTEXT_W;
     isst.context_height = ISST_CONTEXT_H;
-    VSET(isst.camera_pos.v,  10,  10,  10);
+    VSET(isst.camera_pos,  10,  10,  10);
     isst.camera_az = 45;
     isst.camera_el = 35;
     isst.camera_type = RENDER_CAMERA_PERSPECTIVE;

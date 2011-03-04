@@ -70,23 +70,23 @@ typedef struct isst_s
     int context_width, context_height;
 
     /* geometry */
-    TIE_3 geom_min;
-    TIE_3 geom_max;
-    TIE_3 geom_center;
-    tfloat geom_radius;
+    point_t geom_min;
+    point_t geom_max;
+    point_t geom_center;
+    fastf_t geom_radius;
 
     /* camera */
-    TIE_3 camera_pos;
-    TIE_3 camera_foc;
-    tfloat camera_az;
-    tfloat camera_el;
-    tfloat camera_fov;
-    tfloat camera_grid;
+    point_t camera_pos;
+    point_t camera_foc;
+    fastf_t camera_az;
+    fastf_t camera_el;
+    fastf_t camera_fov;
+    fastf_t camera_grid;
     uint8_t camera_type;
 
     /* shotline */
-    TIE_3 shotline_pos;
-    TIE_3 shotline_dir;
+    point_t shotline_pos;
+    vect_t shotline_dir;
 
     /* buffers */
     tienet_buffer_t buffer;
@@ -96,7 +96,7 @@ typedef struct isst_s
     /* input */
     int16_t mouse_x;
     int16_t mouse_y;
-    tfloat mouse_speed;
+    fastf_t mouse_speed;
 
     /* miscellaneous */
     uint8_t update_avail;

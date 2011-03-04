@@ -44,7 +44,7 @@
 
 #undef CLAMP
 
-#include "tie/tie.h"
+#include "tie.h"
 #include "tie/camera.h"
 #include "tie/adrt.h"
 #include "tie/adrt_struct.h"

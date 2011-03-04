@@ -96,13 +96,13 @@ isst_local_worker (gpointer moocow) {
 		    render_shader_init(&camera.render, "component", NULL);
 		    break;
 		case ISST_MODE_CUT:
-		    VMOVE(isst.shotline_pos.v, isst.camera_pos.v);
-		    VSUB2(isst.shotline_dir.v, isst.camera_foc.v, isst.camera_pos.v);
-		    snprintf(buf, BUFSIZ, "#(%f %f %f) #(%f %f %f)", V3ARGS(isst.shotline_pos.v), V3ARGS(isst.shotline_dir.v));
+		    VMOVE(isst.shotline_pos, isst.camera_pos);
+		    VSUB2(isst.shotline_dir, isst.camera_foc, isst.camera_pos);
+		    snprintf(buf, BUFSIZ, "#(%f %f %f) #(%f %f %f)", V3ARGS(isst.shotline_pos), V3ARGS(isst.shotline_dir));
 		    render_shader_init(&camera.render, "cut", buf);
 		    break;
 		case ISST_MODE_FLOS:
-		    snprintf(buf, BUFSIZ, "#(%f %f %f)", V3ARGS(isst.shotline_pos.v));
+		    snprintf(buf, BUFSIZ, "#(%f %f %f)", V3ARGS(isst.shotline_pos));
 		    render_shader_init(&camera.render, "flos", buf);
 		    break;
 		default:
@@ -114,8 +114,8 @@ isst_local_worker (gpointer moocow) {
 
 	camera.type = isst.camera_type;
 	camera.fov  = isst.camera_fov;
-	camera.pos  = isst.camera_pos;
-	camera.focus= isst.camera_foc;
+	VMOVE(camera.pos, isst.camera_pos);
+	VMOVE(camera.focus, isst.camera_foc);
 	camera.gridsize = isst.camera_grid;
 
 	isst.buffer_image.ind = 0;
