@@ -17,6 +17,9 @@ if (NOT OPENGL_FOUND)
     message(STATUS "\tDid not find OpenGL!")
 endif (NOT OPENGL_FOUND)
 
+#find tcl
+find_package(TCL 8.5 EXACT REQUIRED)
+
 #Find BRLCAD
 find_package ( BRLCAD REQUIRED )
 if (NOT BRLCAD_FOUND)
@@ -24,7 +27,7 @@ if (NOT BRLCAD_FOUND)
         RETURN()
 endif (NOT BRLCAD_FOUND)
 
-include_directories(${OPENGL_INCLUDE_DIR} ${SDL_INCLUDE_DIR} ${GTK2_INCLUDE_DIRS} ${BRLCAD_INC_DIRS})
+include_directories(${OPENGL_INCLUDE_DIR} ${SDL_INCLUDE_DIR} ${GTK2_INCLUDE_DIRS} ${BRLCAD_INC_DIRS} ${TCL_INCLUDE_PATH})
 set(MYLIBS ${OPENGL_gl_LIBRARY} ${_BRLCAD_LIBRARY_bu} ${_BRLCAD_LIBRARY_bn} ${_BRLCAD_LIBRARY_rt} ${_BRLCAD_LIBRARY_tie} ${_BRLCAD_LIBRARY_render})
 
 add_library(myplugin SHARED sdl/myplugin.c)
@@ -53,7 +56,7 @@ endif (NOT (SDL_FOUND))
 #endif (NOT APPLE)
 
 if (SDL_FOUND)
-    INCLUDE_DIRECTORIES($(SDL_INCLUDE_DIRS))
+    INCLUDE_DIRECTORIES($(SDL_INCLUDE_DIR))
     add_executable(isst_sdl WIN32 MACOSX_BUNDLE ${ISST_SDL_SOURCES})
     target_link_libraries(isst_sdl ${SDL_LIBRARY} ${MYLIBS})
     add_dependencies(isst_sdl myplugin)
