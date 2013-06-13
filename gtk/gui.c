@@ -55,6 +55,8 @@
 
 #include "isst.h"
 
+#include "icv.h"	/* for image saving */
+
 
 #ifndef HAVE_STRNSTR
 char *strnstr(const char *s1, const char *s2, size_t n) { return strstr(s1, s2); }
@@ -545,7 +547,7 @@ save_screenshot_callback (GtkWidget *widget, gpointer ptr)
         memcpy( buf + i*isst.context_width*3, (unsigned char *)isst.buffer_image.data + (isst.context_height-i)*isst.context_width*3, isst.context_width*3 );
     }
     /* Save Image */
-    bu_image_save( buf, isst.context_width, isst.context_height, 3, (char *)selected_filename, BU_IMAGE_AUTO);
+    icv_image_save( buf, isst.context_width, isst.context_height, 3, (char *)selected_filename, ICV_IMAGE_AUTO);
     free(buf);
     isst.work_frame ();
 
