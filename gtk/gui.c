@@ -541,16 +541,18 @@ save_screenshot_callback (GtkWidget *widget, gpointer ptr)
 	    }
 	}
 
-    /* flip image */
-    buf = (unsigned char *)malloc(isst.context_width * isst.context_height * 3);
-    for(i=0;i<isst.context_height;i++) {
-        memcpy( buf + i*isst.context_width*3, (unsigned char *)isst.buffer_image.data + (isst.context_height-i)*isst.context_width*3, isst.context_width*3 );
+    {   
+	icv_image_t *bif = icv_create(isst.context_width, isst.context_height, ICV_COLOR_SPACE_RGB);
+	/* flip image */
+	for(i=0;i<isst.context_height;i++) {
+	    icv_writeline(bif, i, (unsigned char *)isst.buffer_image.data + (isst.context_height-i)*isst.context_width*3, ICV_DATA_UCHAR);
+	}
+	/* Save Image */
+	icv_save( bif, (char *)selected_filename, ICV_IMAGE_AUTO);
+	icv_free(bif);
     }
-    /* Save Image */
-    icv_image_save( buf, isst.context_width, isst.context_height, 3, (char *)selected_filename, ICV_IMAGE_AUTO);
-    free(buf);
-    isst.work_frame ();
 
+    isst.work_frame ();
     gtk_widget_destroy (widget);
 }
 
