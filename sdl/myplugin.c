@@ -86,7 +86,7 @@ adrt_plugin_work(struct render_s *render, struct tie_s *tie, struct tie_ray_s *r
 #endif
 }
 
-void
+static void
 adrt_plugin_free(render_t *UNUSED(r))
 {
     return;
