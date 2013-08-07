@@ -116,7 +116,7 @@ look(struct isst_s * isst, double x, double y)
 }
 
 void
-shader(struct isst_s *isst, char *mode, char *buf)
+shader(struct isst_s *isst, const char *mode, const char *buf)
 {
     isst->dirty = 1;
     render_shader_init(&isst->camera.render, mode, buf);
@@ -249,7 +249,7 @@ do_loop(struct isst_s *isst)
 #else
 				      snprintf(buf, BUFSIZ, "%f", val); 
 #endif
-				      shader(isst, (const char *)render_shader_load_plugin(".libs/libmyplugin.so"), buf);
+				      shader(isst, render_shader_load_plugin("libmyplugin.so"), buf);
 				      break;
 			    case SDLK_UP:
 			    case 'e': vel[1] = 1; break;
