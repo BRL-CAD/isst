@@ -60,17 +60,17 @@ hit(struct tie_ray_s *UNUSED(ray), struct tie_id_s *id, struct tie_tri_s *tri, v
 }
 
 void
-adrt_plugin_work(render_t *r, struct tie_s *t, struct tie_ray_s *ray, TIE_3 *pixel)
+adrt_plugin_work(struct render_s *render, struct tie_s *tie, struct tie_ray_s *ray, vect_t *pixel)
 {
     struct tie_id_s id;
     struct hitdata_s hitdata;
-    hitdata.render = r;
+    hitdata.render = render;
     hitdata.a = 1.0;
     hitdata.in = 0;
     hitdata.color = 0;
 
-    tie_work(t, ray, &id, hit, &hitdata);
-	    VSETALL(pixel->v, hitdata.color);
+    tie_work(tie, ray, &id, hit, &hitdata);
+    VSETALL(*pixel, hitdata.color);
 #if 0
     switch(hitdata.in) {
 	case HIT_IN:
